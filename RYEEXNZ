@@ -1,623 +1,418 @@
---[[
-    RYEENZY EXPLOIT - Scoot UI Edition
-    Menggunakan library Scoot UI (by samet)
-    Telegram: t.me/Swill_Way
-]]
+-- RYEENZY EXPLOIT - The Forge
+-- UI Library: Obsidian (https://github.com/deividcomsono/Obsidian)
 
--- Pastikan library Scoot UI dimuat (sesuai URL yang Anda berikan)
-loadstring(game:HttpGet("https://raw.githubusercontent.com/x2Swiftz/UI-Library/refs/heads/main/Libraries/Scoot%20UI%20-%20Example.lua"))()
+-- Memuat Library dan Addons
+local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
--- Tunggu sebentar hingga library siap
-task.wait(0.5)
+-- Inisialisasi variabel global untuk Options dan Toggles
+local Options = Library.Options
+local Toggles = Library.Toggles
 
--- Periksa apakah library berhasil dimuat
-if not Library then
-    warn("Scoot UI gagal dimuat! Periksa koneksi atau sumber library.")
-    return
-end
+-- Konfigurasi Library
+Library.ForceCheckbox = false
+Library.ShowToggleFrameInKeybinds = true
 
--- ==================================================
--- MEMBUAT WINDOW UTAMA
--- ==================================================
+-- Membuat Jendela Utama
 local Window = Library:CreateWindow({
-    Name = "RYEENZY EXPLOIT",
-    Subtitle = "The Ultimate Roblox Exploit",
-    Size = UDim2.new(0, 700, 0, 450),
-    Position = UDim2.new(0.5, -350, 0.5, -225),
-    Theme = "Preset", -- Menggunakan tema preset dari library
-    Keybind = Enum.KeyCode.RightControl -- Tombol untuk membuka/tutup GUI
+    Title = "RYEENZY EXPLOIT",
+    Footer = "The Forge - Full Features",
+    Icon = 95816097006870, -- Icon default
+    NotifySide = "Right",
+    ShowCustomCursor = true,
+    Resizable = true,
 })
 
--- Jika Window tidak berhasil dibuat, buat secara manual dengan instance dasar
-if not Window then
-    -- Fallback: Buat GUI sederhana jika Window gagal
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "RYEENZY_Exploit"
-    screenGui.Parent = gethui and gethui() or game:GetService("CoreGui")
-    screenGui.ResetOnSpawn = false
-    
-    local frame = Instance.new("Frame")
-    frame.Parent = screenGui
-    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    frame.BorderSizePixel = 0
-    frame.Position = UDim2.new(0.5, -300, 0.5, -200)
-    frame.Size = UDim2.new(0, 600, 0, 400)
-    frame.Active = true
-    frame.Draggable = true
-    
-    local title = Instance.new("TextLabel")
-    title.Parent = frame
-    title.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    title.BorderSizePixel = 0
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.Font = Enum.Font.GothamBold
-    title.Text = "RYEENZY EXPLOIT (Fallback Mode)"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 14
-    
-    print("⚠️ Scoot UI Window gagal, menggunakan fallback GUI")
-    return
-end
-
--- ==================================================
--- MEMBUAT TAB-TAB UTAMA
--- ==================================================
-local TabMain = Window:CreateTab({
-    Name = "Main",
-    Icon = "rbxassetid://6031068350" -- Ikon gear
-})
-
-local TabPlayer = Window:CreateTab({
-    Name = "Player",
-    Icon = "rbxassetid://6031075930" -- Ikon player
-})
-
-local TabCombat = Window:CreateTab({
-    Name = "Combat",
-    Icon = "rbxassetid://6031083096" -- Ikon pedang
-})
-
-local TabVisual = Window:CreateTab({
-    Name = "Visuals",
-    Icon = "rbxassetid://6031091635" -- Ikon mata
-})
-
-local TabMisc = Window:CreateTab({
-    Name = "Misc",
-    Icon = "rbxassetid://6031097357" -- Ikon lainnya
-})
-
--- ==================================================
--- SECTION: MAIN TAB
--- ==================================================
-local MainSection1 = TabMain:CreateSection("Auto Farm")
-local MainSection2 = TabMain:CreateSection("Auto Collect")
-local MainSection3 = TabMain:CreateSection("Auto Sell")
-
--- Variabel global untuk kontrol fitur
-_G.RYEENZY = {
-    AutoFarm = false,
-    AutoCollect = false,
-    AutoSell = false,
-    WalkSpeed = 16,
-    JumpPower = 50,
-    InfiniteJump = false,
-    Aimbot = false,
-    ESP = false,
-    Fullbright = false,
-    Noclip = false
+-- Membuat Tab
+local Tabs = {
+    Farming = Window:AddTab("Farming", "pickaxe"),       -- Ikon pickaxe
+    Combat = Window:AddTab("Combat", "sword"),           -- Ikon sword
+    Forging = Window:AddTab("Forging", "hammer"),        -- Ikon hammer
+    Player = Window:AddTab("Player", "user"),            -- Ikon user
+    Misc = Window:AddTab("Misc", "settings"),            -- Ikon settings
+    ["UI Settings"] = Window:AddTab("UI Settings", "settings"),
 }
 
--- Auto Farm Toggle
-MainSection1:Toggle({
-    Name = "Auto Farm",
-    Description = "Otomatis menyerang musuh terdekat",
-    Flag = "AutoFarm",
+-- ==================================================
+-- TAB FARMING (Pertanian & Penambangan)
+-- ==================================================
+local FarmingLeft = Tabs.Farming:AddLeftGroupbox("Auto Mine")
+local FarmingRight = Tabs.Farming:AddRightGroupbox("World & Teleport")
+
+-- Auto Mine Toggle
+FarmingLeft:AddToggle("AutoMine", {
+    Text = "Auto Mine",
+    Tooltip = "Menambang batu/boulder di sekitar secara otomatis.",
     Default = false,
-    Callback = function(state)
-        _G.RYEENZY.AutoFarm = state
-        if state then
-            spawn(function()
-                while _G.RYEENZY.AutoFarm and Window.Visible do
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                            -- Cari musuh terdekat
-                            local nearestEnemy = nil
-                            local nearestDist = math.huge
-                            
-                            for _, v in pairs(workspace:GetDescendants()) do
-                                if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
-                                    if v ~= player.Character and v.Humanoid.Health > 0 then
-                                        local dist = (v.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                                        if dist < nearestDist then
-                                            nearestDist = dist
-                                            nearestEnemy = v
-                                        end
-                                    end
-                                end
-                            end
-                            
-                            if nearestEnemy then
-                                player.Character.HumanoidRootPart.CFrame = nearestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
-                                -- Simulasi serangan
-                                if player.Character:FindFirstChildOfClass("Tool") then
-                                    local tool = player.Character:FindFirstChildOfClass("Tool")
-                                    tool:Activate()
-                                end
-                            end
-                        end
-                    end)
-                    wait(1.5)
-                end
-            end)
-        end
-    end
+    Callback = function(Value)
+        -- Logika Auto Mine akan ditempatkan di sini atau menggunakan :OnChanged
+        print("Auto Mine:", Value)
+    end,
 })
 
--- Slider Kecepatan Farm
-MainSection1:Slider({
-    Name = "Farm Interval",
-    Description = "Kecepatan loop auto farm (detik)",
-    Min = 0.5,
-    Max = 5,
-    Default = 1.5,
-    Flag = "FarmSpeed",
-    Callback = function(value)
-        _G.RYEENZY.FarmSpeed = value
-    end
+-- Pilihan Radius Tambang
+FarmingLeft:AddSlider("MineRadius", {
+    Text = "Radius Tambang",
+    Default = 10,
+    Min = 5,
+    Max = 30,
+    Rounding = 0,
+    Suffix = " stud",
+    Tooltip = "Jarak maksimum untuk mendeteksi batu.",
 })
 
--- Auto Collect Toggle
-MainSection2:Toggle({
-    Name = "Auto Collect",
-    Description = "Otomatis mengumpulkan item/drop",
-    Flag = "AutoCollect",
-    Default = false,
-    Callback = function(state)
-        _G.RYEENZY.AutoCollect = state
-        if state then
-            spawn(function()
-                while _G.RYEENZY.AutoCollect and Window.Visible do
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                            -- Cari item yang bisa dikoleksi
-                            for _, v in pairs(workspace:GetDescendants()) do
-                                if v:IsA("Part") and (v.Name:lower():find("ore") or v.Name:lower():find("drop") or v.Name:lower():find("item")) then
-                                    if (v.Position - player.Character.HumanoidRootPart.Position).Magnitude < 50 then
-                                        player.Character.HumanoidRootPart.CFrame = v.CFrame + Vector3.new(0, 3, 0)
-                                        wait(0.3)
-                                        -- Simulasi collect (trigger proximity prompt jika ada)
-                                        if v:FindFirstChildOfClass("ProximityPrompt") then
-                                            fireproximityprompt(v:FindFirstChildOfClass("ProximityPrompt"))
-                                        end
-                                        break
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                    wait(2)
-                end
-            end)
-        end
-    end
+-- Pilihan Kecepatan Tambang (Delay)
+FarmingLeft:AddSlider("MineDelay", {
+    Text = "Kecepatan (Delay)",
+    Default = 0.2,
+    Min = 0.1,
+    Max = 1,
+    Rounding = 1,
+    Suffix = "s",
+    Tooltip = "Jeda waktu antara setiap pukulan.",
 })
 
--- Auto Sell Toggle
-MainSection3:Toggle({
-    Name = "Auto Sell",
-    Description = "Otomatis menjual item ke NPC",
-    Flag = "AutoSell",
+-- Auto Collect Item
+FarmingLeft:AddToggle("AutoCollect", {
+    Text = "Auto Collect Item",
+    Tooltip = "Mengambil ore/item yang jatuh secara otomatis.",
+    Default = true,
+})
+
+-- Dropdown Lokasi Teleport
+FarmingRight:AddDropdown("TeleportLocation", {
+    Values = { "Spawn Area", "Forgotten Kingdom", "Deep Mines", "Boss Arena" },
+    Default = 1,
+    Multi = false,
+    Text = "Teleport ke",
+    Tooltip = "Pilih lokasi untuk teleport.",
+})
+
+-- Tombol Teleport
+FarmingRight:AddButton({
+    Text = "Teleport",
+    Func = function()
+        local selectedLocation = Options.TeleportLocation.Value
+        print("Teleport ke:", selectedLocation)
+        -- Logika teleport berdasarkan pilihan
+        -- Contoh: Cari Part/CFrame berdasarkan nama lokasi
+    end,
+    Tooltip = "Klik untuk teleport ke lokasi yang dipilih.",
+})
+
+FarmingRight:AddDivider()
+
+-- ESP Ore
+FarmingRight:AddToggle("OreESP", {
+    Text = "ESP Ore",
+    Tooltip = "Menampilkan lokasi ore melalui tembok (Highlight).",
     Default = false,
-    Callback = function(state)
-        _G.RYEENZY.AutoSell = state
-        if state then
-            spawn(function()
-                while _G.RYEENZY.AutoSell and Window.Visible do
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        if player:FindFirstChild("PlayerGui") then
-                            -- Cari tombol jual di GUI
-                            for _, v in pairs(player.PlayerGui:GetDescendants()) do
-                                if v:IsA("TextButton") then
-                                    local text = v.Text:lower()
-                                    if text == "sell" or text:find("jual") or text:find("sell") then
-                                        v:Click()
-                                        break
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                    wait(3)
-                end
-            end)
-        end
-    end
 })
 
 -- ==================================================
--- SECTION: PLAYER TAB
+-- TAB COMBAT (Pertarungan)
 -- ==================================================
-local PlayerSection = TabPlayer:CreateSection("Player Modifications")
+local CombatLeft = Tabs.Combat:AddLeftGroupbox("Auto Battle")
+local CombatRight = Tabs.Combat:AddRightGroupbox("Targeting & ESP")
 
--- Slider WalkSpeed
-PlayerSection:Slider({
-    Name = "WalkSpeed",
-    Description = "Atur kecepatan jalan",
-    Min = 16,
-    Max = 200,
+-- Auto Kill
+CombatLeft:AddToggle("AutoKill", {
+    Text = "Auto Kill",
+    Tooltip = "Menyerang monster di sekitar secara otomatis.",
+    Default = false,
+})
+
+-- Kill Aura
+CombatLeft:AddToggle("KillAura", {
+    Text = "Kill Aura",
+    Tooltip = "Menyerang semua musuh dalam jangkauan tanpa menarget.",
+    Default = false,
+})
+
+-- Pilihan Radius Serangan
+CombatLeft:AddSlider("AttackRadius", {
+    Text = "Radius Serangan",
+    Default = 15,
+    Min = 5,
+    Max = 40,
+    Rounding = 0,
+    Suffix = " stud",
+})
+
+-- Pilihan Target Prioritas
+CombatRight:AddDropdown("PriorityTarget", {
+    Values = { "Terdekat", "HP Terendah", "Level Tertinggi", "Boss" },
+    Default = 1,
+    Multi = false,
+    Text = "Prioritas Target",
+})
+
+-- ESP Player/Monster
+CombatRight:AddToggle("EnemyESP", {
+    Text = "ESP Monster",
+    Tooltip = "Menampilkan lokasi monster.",
+    Default = false,
+})
+
+CombatRight:AddToggle("PlayerESP", {
+    Text = "ESP Player",
+    Tooltip = "Menampilkan lokasi player lain.",
+    Default = false,
+})
+
+-- ==================================================
+-- TAB FORGING (Penempaan)
+-- ==================================================
+local ForgingLeft = Tabs.Forging:AddLeftGroupbox("Auto Forge")
+local ForgingRight = Tabs.Forging:AddRightGroupbox("Crafting Settings")
+
+-- Auto Forge
+ForgingLeft:AddToggle("AutoForge", {
+    Text = "Auto Forge",
+    Tooltip = "Menempa item secara otomatis menggunakan ore di inventory.",
+    Default = false,
+})
+
+-- Pilihan Tipe Item yang Akan Ditempa
+ForgingLeft:AddDropdown("ForgeItemType", {
+    Values = { "Weapon (Senjata)", "Armor (Baju Besi)", "Terlaris (Profit)" },
+    Default = 1,
+    Multi = false,
+    Text = "Tipe Item",
+})
+
+-- Pilihan Kualitas
+ForgingLeft:AddDropdown("ForgeQuality", {
+    Values = { "Normal", "Good", "Perfect" },
+    Default = 1,
+    Multi = false,
+    Text = "Kualitas Target",
+})
+
+-- Auto Complete Minigame
+ForgingRight:AddToggle("AutoMinigame", {
+    Text = "Auto Selesaikan Minigame",
+    Tooltip = "Secara otomatis menyelesaikan minigame forging (smelting, pouring, forging).",
+    Default = true,
+})
+
+-- Tombol Forge Sekarang (Manual)
+ForgingRight:AddButton({
+    Text = "Forge Sekarang (Manual)",
+    Func = function()
+        print("Memulai proses forging manual...")
+        -- Panggil fungsi forge
+    end,
+})
+
+-- ==================================================
+-- TAB PLAYER (Pemain)
+-- ==================================================
+local PlayerLeft = Tabs.Player:AddLeftGroupbox("Stats & Booster")
+local PlayerRight = Tabs.Player:AddRightGroupbox("Inventory & Quests")
+
+-- Auto Level / Auto Claim XP
+PlayerLeft:AddToggle("AutoLevel", {
+    Text = "Auto Level (Claim XP)",
+    Tooltip = "Secara otomatis meng-klaim XP dari Index atau quest yang selesai.",
+    Default = false,
+})
+
+-- Slider Kecepatan Jalan
+PlayerLeft:AddSlider("WalkSpeed", {
+    Text = "WalkSpeed",
     Default = 16,
-    Flag = "WalkSpeed",
-    Callback = function(value)
-        _G.RYEENZY.WalkSpeed = value
-        local player = game.Players.LocalPlayer
-        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = value
-        end
-    end
+    Min = 16,
+    Max = 120,
+    Rounding = 0,
+    Suffix = " ws",
+    Tooltip = "Mengubah kecepatan jalan karakter.",
 })
 
--- Slider JumpPower
-PlayerSection:Slider({
-    Name = "JumpPower",
-    Description = "Atur kekuatan lompat",
+-- Slider Kecepatan Lompat
+PlayerLeft:AddSlider("JumpPower", {
+    Text = "JumpPower",
+    Default = 50,
     Min = 50,
     Max = 200,
-    Default = 50,
-    Flag = "JumpPower",
-    Callback = function(value)
-        _G.RYEENZY.JumpPower = value
-        local player = game.Players.LocalPlayer
-        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-            player.Character.Humanoid.JumpPower = value
-        end
-    end
+    Rounding = 0,
+    Suffix = " jp",
 })
 
--- Toggle Infinite Jump
-PlayerSection:Toggle({
-    Name = "Infinite Jump",
-    Description = "Lompat tanpa batas",
-    Flag = "InfiniteJump",
+-- Tombol Reset Speed
+PlayerLeft:AddButton({
+    Text = "Reset Speed",
+    Func = function()
+        Options.WalkSpeed:SetValue(16)
+        Options.JumpPower:SetValue(50)
+        print("Speed di-reset ke normal.")
+    end,
+})
+
+-- Auto Accept Quest
+PlayerRight:AddToggle("AutoAcceptQuest", {
+    Text = "Auto Accept Quest",
+    Tooltip = "Secara otomatis menerima quest dari NPC saat berada di dekatnya.",
     Default = false,
-    Callback = function(state)
-        _G.RYEENZY.InfiniteJump = state
-        local UIS = game:GetService("UserInputService")
-        
-        if state then
-            if _G.InfJumpConnection then
-                _G.InfJumpConnection:Disconnect()
-            end
-            _G.InfJumpConnection = UIS.JumpRequest:Connect(function()
-                if _G.RYEENZY.InfiniteJump and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                    game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                end
-            end)
-        else
-            if _G.InfJumpConnection then
-                _G.InfJumpConnection:Disconnect()
-                _G.InfJumpConnection = nil
-            end
-        end
-    end
 })
 
--- Toggle Noclip
-PlayerSection:Toggle({
-    Name = "Noclip",
-    Description = "Tembus dinding",
-    Flag = "Noclip",
+-- Auto Complete Quest
+PlayerRight:AddToggle("AutoCompleteQuest", {
+    Text = "Auto Complete/Turn In Quest",
+    Tooltip = "Secara otomatis menyerahkan quest yang sudah selesai ke NPC.",
     Default = false,
-    Callback = function(state)
-        _G.RYEENZY.Noclip = state
-        spawn(function()
-            while _G.RYEENZY.Noclip and Window.Visible do
-                pcall(function()
-                    local player = game.Players.LocalPlayer
-                    if player.Character then
-                        for _, v in pairs(player.Character:GetDescendants()) do
-                            if v:IsA("BasePart") and v.CanCollide then
-                                v.CanCollide = false
-                            end
-                        end
-                    end
-                end)
-                wait(0.1)
-            end
-        end)
-    end
-})
-
--- Tombol Teleport ke Spawn
-PlayerSection:Button({
-    Name = "Teleport to Spawn",
-    Description = "Teleport ke titik spawn",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
-        end
-    end
 })
 
 -- ==================================================
--- SECTION: COMBAT TAB
+-- TAB MISC (Lain-lain)
 -- ==================================================
-local CombatSection = TabCombat:CreateSection("Combat Options")
+local MiscLeft = Tabs.Misc:AddLeftGroupbox("Miscellaneous")
+local MiscRight = Tabs.Misc:AddRightGroupbox("Keybinds & Utility")
 
--- Toggle Aimbot
-CombatSection:Toggle({
-    Name = "Aimbot",
-    Description = "Aktifkan aimbot (Lock target)",
-    Flag = "Aimbot",
+-- Anti AFK
+MiscLeft:AddToggle("AntiAFK", {
+    Text = "Anti AFK",
+    Tooltip = "Mencegah koneksi terputus karena tidak bergerak.",
+    Default = true,
+})
+
+-- NoClip (Hati-hati)
+MiscLeft:AddToggle("NoClip", {
+    Text = "NoClip (Tembus Dinding)",
+    Tooltip = "Memungkinkan Anda menembus dinding. Gunakan dengan risiko sendiri!",
     Default = false,
-    Callback = function(state)
-        _G.RYEENZY.Aimbot = state
-    end
+    Risky = true, -- Teks akan berwarna merah sebagai peringatan
 })
 
--- Slider Aimbot FOV
-CombatSection:Slider({
-    Name = "Aimbot FOV",
-    Description = "Field of View untuk aimbot",
-    Min = 50,
-    Max = 500,
-    Default = 150,
-    Flag = "AimbotFOV",
-    Callback = function(value)
-        _G.RYEENZY.AimbotFOV = value
-    end
-})
-
--- Dropdown untuk memilih bagian tubuh
-CombatSection:Dropdown({
-    Name = "Aimbot Part",
-    Description = "Target bagian tubuh",
-    Options = {"Head", "Torso", "HumanoidRootPart", "Left Arm", "Right Arm", "Left Leg", "Right Leg"},
-    Default = "Head",
-    Flag = "AimbotPart",
-    Callback = function(option)
-        _G.RYEENZY.AimbotPart = option
-    end
-})
-
--- Tombol Instant Kill (simulasi)
-CombatSection:Button({
-    Name = "Instant Kill (Test)",
-    Description = "Set damage tool menjadi besar",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        if player.Character and player.Character:FindFirstChildOfClass("Tool") then
-            local tool = player.Character:FindFirstChildOfClass("Tool")
-            -- Cari value damage
-            for _, v in pairs(tool:GetDescendants()) do
-                if v:IsA("NumberValue") and (v.Name:lower():find("damage") or v.Name:lower():find("dmg")) then
-                    v.Value = 999999
-                    Library:Notify("Damage set ke 999999!", 2)
-                    return
-                end
-            end
-            Library:Notify("Tidak menemukan value damage!", 2)
-        else
-            Library:Notify("Tidak ada tool di tangan!", 2)
-        end
-    end
-})
-
--- ==================================================
--- SECTION: VISUALS TAB
--- ==================================================
-local VisualSection = TabVisual:CreateSection("ESP Settings")
-
--- Toggle ESP
-VisualSection:Toggle({
-    Name = "ESP Players",
-    Description = "Lihat player melalui dinding",
-    Flag = "ESP",
+-- Invisible (Hide Character)
+MiscLeft:AddToggle("Invisible", {
+    Text = "Invisible (Sembunyikan Karakter)",
+    Tooltip = "Membuat karakter Anda tidak terlihat oleh pemain lain (Client-side).",
     Default = false,
-    Callback = function(state)
-        _G.RYEENZY.ESP = state
-        if state then
-            spawn(function()
-                while _G.RYEENZY.ESP and Window.Visible do
-                    pcall(function()
-                        for _, v in pairs(game.Players:GetPlayers()) do
-                            if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
-                                if not v.Character.Head:FindFirstChild("RYEENZY_ESP") then
-                                    local bill = Instance.new("BillboardGui")
-                                    bill.Name = "RYEENZY_ESP"
-                                    bill.Parent = v.Character.Head
-                                    bill.AlwaysOnTop = true
-                                    bill.Size = UDim2.new(0, 150, 0, 40)
-                                    bill.StudsOffset = Vector3.new(0, 2, 0)
-                                    
-                                    local bg = Instance.new("Frame")
-                                    bg.Parent = bill
-                                    bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                                    bg.BackgroundTransparency = 0.3
-                                    bg.Size = UDim2.new(1, 0, 1, 0)
-                                    
-                                    local nameLabel = Instance.new("TextLabel")
-                                    nameLabel.Parent = bg
-                                    nameLabel.BackgroundTransparency = 1
-                                    nameLabel.Size = UDim2.new(1, 0, 0.6, 0)
-                                    nameLabel.Font = Enum.Font.GothamBold
-                                    nameLabel.Text = v.Name
-                                    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                                    nameLabel.TextSize = 14
-                                    
-                                    local distLabel = Instance.new("TextLabel")
-                                    distLabel.Parent = bg
-                                    distLabel.BackgroundTransparency = 1
-                                    distLabel.Position = UDim2.new(0, 0, 0.6, 0)
-                                    distLabel.Size = UDim2.new(1, 0, 0.4, 0)
-                                    distLabel.Font = Enum.Font.Gotham
-                                    distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-                                    distLabel.TextSize = 10
-                                    
-                                    -- Update jarak setiap saat
-                                    spawn(function()
-                                        while _G.RYEENZY.ESP and bill and bill.Parent do
-                                            if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                                                local dist = (v.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                                                distLabel.Text = string.format("%.1f studs", dist)
-                                            end
-                                            wait(0.5)
-                                        end
-                                    end)
-                                end
-                            end
-                        end
-                    end)
-                    wait(1)
-                end
-                -- Hapus semua ESP saat dimatikan
-                for _, v in pairs(game.Players:GetPlayers()) do
-                    if v.Character and v.Character:FindFirstChild("Head") and v.Character.Head:FindFirstChild("RYEENZY_ESP") then
-                        v.Character.Head.RYEENZY_ESP:Destroy()
-                    end
-                end
-            end)
-        else
-            for _, v in pairs(game.Players:GetPlayers()) do
-                if v.Character and v.Character:FindFirstChild("Head") and v.Character.Head:FindFirstChild("RYEENZY_ESP") then
-                    v.Character.Head.RYEENZY_ESP:Destroy()
-                end
-            end
-        end
-    end
 })
 
--- Toggle Fullbright
-VisualSection:Toggle({
-    Name = "Fullbright",
-    Description = "Terang total",
-    Flag = "Fullbright",
-    Default = false,
-    Callback = function(state)
-        _G.RYEENZY.Fullbright = state
-        if state then
-            game:GetService("Lighting").Brightness = 2
-            game:GetService("Lighting").GlobalShadows = false
-            game:GetService("Lighting").FogEnd = 100000
-        else
-            game:GetService("Lighting").Brightness = 1
-            game:GetService("Lighting").GlobalShadows = true
-            game:GetService("Lighting").FogEnd = 1000
-        end
-    end
+-- Slider Field of View (FOV)
+MiscLeft:AddSlider("FOV", {
+    Text = "Field of View (FOV)",
+    Default = 70,
+    Min = 40,
+    Max = 120,
+    Rounding = 0,
+    Suffix = "°",
 })
-
--- ==================================================
--- SECTION: MISC TAB
--- ==================================================
-local MiscSection = TabMisc:CreateSection("Utilities")
 
 -- Tombol Rejoin
-MiscSection:Button({
-    Name = "Rejoin Game",
-    Description = "Masuk ulang ke server yang sama",
-    Callback = function()
-        local ts = game:GetService("TeleportService")
-        ts:Teleport(game.PlaceId, game.Players.LocalPlayer)
-    end
+MiscRight:AddButton({
+    Text = "Rejoin Server",
+    Func = function()
+        Library:Notify("Memproses rejoin...")
+        game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
+    end,
+    Tooltip = "Teleport kembali ke server yang sama.",
 })
 
 -- Tombol Server Hop
-MiscSection:Button({
-    Name = "Server Hop",
-    Description = "Pindah ke server lain",
-    Callback = function()
-        Library:Notify("Mencari server lain...", 2)
-        -- Implementasi server hop sederhana
-        local placeId = game.PlaceId
-        local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?limit=10"
-        local success, response = pcall(function()
-            return game:HttpGet(url)
-        end)
-        
-        if success and response then
-            -- Parse JSON sederhana (tanpa library JSON)
-            Library:Notify("Server hop dalam pengembangan!", 2)
-        end
-    end
-})
-
--- Tombol Copy Telegram
-MiscSection:Button({
-    Name = "📱 Telegram",
-    Description = "Copy link Telegram",
-    Callback = function()
-        if setclipboard then
-            setclipboard("t.me/Swill_Way")
-            Library:Notify("Telegram link copied!", 1)
-        else
-            Library:Notify("Executor tidak mendukung setclipboard", 2)
-        end
-    end
-})
-
--- Tombol Destroy GUI
-MiscSection:Button({
-    Name = "Destroy GUI",
-    Description = "Hapus GUI dari layar",
-    Callback = function()
-        Library:Unload()
-    end
+MiscRight:AddButton({
+    Text = "Server Hop",
+    Func = function()
+        Library:Notify("Mencari server baru...")
+        -- Logika Server Hop (cukup kompleks, contoh sederhana: pindah ke server acak)
+        -- Tempatkan kode server hop di sini
+    end,
 })
 
 -- ==================================================
--- NOTIFIKASI STARTUP
+-- TAB UI SETTINGS (Pengaturan Tampilan)
 -- ==================================================
-task.wait(1)
-Library:Notify("✅ RYEENZY EXPLOIT Loaded! Join Telegram: t.me/Swill_Way", 5)
+local UIGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu Settings")
 
-print([[
-=================================
-   RYEENZY EXPLOIT - Scoot UI
-   Telegram: t.me/Swill_Way
-   Load Time: ]] .. os.clock() .. [[ seconds
-=================================
-]])
+-- Menu Toggle Button
+UIGroup:AddButton({
+    Text = "Toggle Menu",
+    Func = function()
+        Library:Toggle()
+    end,
+    Tooltip = "Menampilkan atau menyembunyikan menu.",
+})
+
+UIGroup:AddLabel("Menu Keybind"):AddKeyPicker("MenuKeybind", {
+    Default = "RightShift", -- Ganti dengan key yang diinginkan
+    Text = "Keybind",
+    NoUI = true, -- Tidak menampilkan picker di UI, hanya diatur di sini
+    Callback = function(Value)
+        Library:Toggle()
+    end,
+})
+
+-- Pemisah
+UIGroup:AddDivider()
+
+-- Di sinilah addon ThemeManager dan SaveManager akan ditempatkan
+-- Mereka akan menambahkan tab mereka sendiri secara otomatis
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+
+-- Menambahkan folder untuk menyimpan konfigurasi
+SaveManager:SetFolder("RYEENZY/TheForge")
+
+-- Ignore keys tertentu agar tidak ikut tersimpan (misalnya keybind menu)
+SaveManager:IgnoreThemeSettings() -- Mengabaikan pengaturan tema dari save file
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" }) -- Mengabaikan keybind menu
+
+-- Membangun tab untuk ThemeManager dan SaveManager
+ThemeManager:ApplyToTab(Tabs["UI Settings"])
+SaveManager:BuildConfigSection(Tabs["UI Settings"])
 
 -- ==================================================
--- LOOP UNTUK AIMBOT (SEDERHANA)
+-- LOGIKA UTAMA SCRIPT (Contoh Sederhana)
 -- ==================================================
-spawn(function()
-    while Window.Visible do
-        if _G.RYEENZY.Aimbot then
-            pcall(function()
-                local player = game.Players.LocalPlayer
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and camera then
-                    local closestTarget = nil
-                    local closestDist = _G.RYEENZY.AimbotFOV or 150
-                    
-                    for _, v in pairs(game.Players:GetPlayers()) do
-                        if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChildOfClass("Humanoid") and v.Character.Humanoid.Health > 0 then
-                            local screenPos, onScreen = camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
-                            if onScreen then
-                                local dist = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-                                if dist < closestDist then
-                                    closestDist = dist
-                                    closestTarget = v
-                                end
-                            end
-                        end
-                    end
-                    
-                    if closestTarget and closestTarget.Character and closestTarget.Character:FindFirstChild(_G.RYEENZY.AimbotPart or "Head") then
-                        local targetPart = closestTarget.Character[_G.RYEENZY.AimbotPart or "Head"]
-                        if targetPart then
-                            -- Aim ke target
-                            camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
-                        end
-                    end
+-- Disarankan untuk menulis logika fitur di sini atau di file terpisah
+-- Menggunakan :OnChanged untuk merespon perubahan nilai toggle/slider
+
+-- Contoh untuk Auto Mine
+Toggles.AutoMine:OnChanged(function()
+    if Toggles.AutoMine.Value then
+        -- Mulai loop auto mine
+        print("Memulai Auto Mine...")
+        -- Contoh loop sederhana (gunakan task.spawn atau while loop dengan wait)
+        task.spawn(function()
+            while Toggles.AutoMine.Value do
+                -- Logika mencari dan memukul batu
+                -- Contoh: Cari object dengan nama "Rock" atau "Boulder"
+                local rock = game:GetService("Workspace"):FindFirstChild("Rock") -- Ini hanya contoh, perlu disesuaikan
+                if rock then
+                    -- Lakukan aksi menambang
+                    print("Menambang batu...")
                 end
-            end)
-        end
-        wait()
+                wait(Options.MineDelay.Value) -- Gunakan delay dari slider
+            end
+        end)
+    else
+        print("Auto Mine dihentikan.")
     end
 end)
+
+-- Contoh untuk WalkSpeed
+Options.WalkSpeed:OnChanged(function()
+    local player = game:GetService("Players").LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = Options.WalkSpeed.Value
+    end
+end)
+
+-- Contoh untuk Anti AFK
+local vu = game:GetService("VirtualUser")
+Toggles.AntiAFK:OnChanged(function()
+    if Toggles.AntiAFK.Value then
+        game:GetService("Players").LocalPlayer.Idled:Connect(function()
+            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            wait(1)
+            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end)
+    end
+end)
+
+-- Notifikasi bahwa script telah dimuat
+Library:Notify("RYEENZY EXPLOIT for The Forge berhasil dimuat! Selamat menggunakan.", 3)
