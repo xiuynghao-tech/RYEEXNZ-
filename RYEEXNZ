@@ -1,871 +1,891 @@
--- RYEENZY EXPLOIT v6.0 - FULLY WORKING
--- Fitur Lengkap: Auto Mine, Auto Forge, Auto Kill, ESP, Teleport, Dupe, dll
--- Gabungan script terbaik dari Lazy Hub, Space Hub, Vxeze Hub, dan PepeHook [citation:5][citation:8]
+-- VIOLENCE DISTRICT - ULTIMATE CHEAT (OBSIDIAN UI EDITION)
+-- Menggunakan UI Library Obsidian (modifikasi Linoria)
+-- Fitur Lengkap: ESP, Auto Parry, Auto Kill, No Cooldown, Teleport, dll
 
--- Load Library Obsidian (ringan & stabil)
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
+-- ============================================
+-- LOAD OBSIDIAN UI LIBRARY
+-- ============================================
+local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
--- Variables Global
 local Options = Library.Options
 local Toggles = Library.Toggles
-local player = game:GetService("Players").LocalPlayer
-local Workspace = game:GetService("Workspace")
+
+-- Setup Window
+local Window = Library:CreateWindow({
+    Title = "RYEENZY | VD",
+    Footer = "PREMIUM SCRIP BY RYEENZY",
+    Icon = 95816097006870,
+    NotifySide = "Right",
+    ShowCustomCursor = true,
+    Resizable = true,
+})
+
+-- ============================================
+-- VARIABEL GLOBAL
+-- ============================================
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:GetService("VirtualUser")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Camera = Workspace.CurrentCamera
 
--- ==================================================
--- AUTO-DETECT REMOTE EVENTS & GAME OBJECTS
--- ==================================================
-local remotes = {
-    mine = nil,
-    forge = nil,
-    attack = nil,
-    sell = nil
+-- Database settings
+getgenv().VD = {
+    ESP = {
+        Enabled = false,
+        Survivors = true,
+        Killer = true,
+        Generators = true,
+        Hooks = true,
+        Chests = true,
+        Tracers = true,
+        Names = true,
+        Health = true,
+        Distance = true,
+        Boxes = false,
+    },
+    Colors = {
+        Survivor = Color3.new(0, 1, 0),
+        Killer = Color3.new(1, 0, 0),
+        Hook = Color3.new(1, 0.5, 0),
+        Generator = Color3.new(0, 1, 1),
+        Chest = Color3.new(1, 1, 0),
+        Tracer = Color3.new(1, 1, 1),
+    },
+    Survivor = {
+        AutoParry = false,
+        AutoGenerator = false,
+        AutoHeal = false,
+        NoSkillCheck = false,
+        AutoChest = false,
+    },
+    Killer = {
+        AutoKill = false,
+        NoCooldown = false,
+        AntiStun = false,
+        BiggerHitbox = false,
+        FastReload = false,
+    },
+    Movement = {
+        Walkspeed = 16,
+        JumpPower = 50,
+        NoClip = false,
+        Fly = false,
+        Teleport = false,
+        SpeedBoost = false,
+    },
+    Visuals = {
+        Fullbright = false,
+        NoFog = false,
+    },
 }
 
--- Daftar kemungkinan remote events [citation:5]
-local possibleRemotes = {
-    mine = {"MiningEvent", "MineRock", "OreMine", "RockEvent"},
-    forge = {"ForgeEvent", "CraftItem", "SmeltOre", "PourMetal", "HammerHit"},
-    attack = {"AttackEvent", "DamageEnemy", "CombatEvent", "ZombieKill"},
-    sell = {"SellEvent", "MerchantSell", "VendorSell"}
-}
+-- ============================================
+-- FUNGSI DETEKSI OBJEK
+-- ============================================
 
--- Auto-detect remotes
-for category, names in pairs(possibleRemotes) do
-    for _, name in pairs(names) do
-        local found = ReplicatedStorage:FindFirstChild(name, true) or 
-                     game:GetService("CollectionService"):GetTagged(name)[1]
-        if found and (found:IsA("RemoteEvent") or found:IsA("RemoteFunction")) then
-            remotes[category] = found
-            break
+local function GetKiller()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            for _, obj in pairs(plr.Character:GetChildren()) do
+                if obj:IsA("Tool") then
+                    return plr
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function GetGenerators()
+    local gens = {}
+    local keywords = {"generator", "gen", "repair", "power", "gens", "generat"}
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        local name = obj.Name:lower()
+        for _, kw in pairs(keywords) do
+            if name:find(kw) then
+                if obj:IsA("BasePart") or obj:IsA("Model") then
+                    table.insert(gens, obj)
+                end
+                break
+            end
+        end
+    end
+    return gens
+end
+
+local function GetHooks()
+    local hooks = {}
+    local keywords = {"hook", "kait", "hanger", "meat", "hang", "hook_"}
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        local name = obj.Name:lower()
+        for _, kw in pairs(keywords) do
+            if name:find(kw) then
+                if obj:IsA("BasePart") then
+                    table.insert(hooks, obj)
+                end
+                break
+            end
+        end
+    end
+    return hooks
+end
+
+local function GetChests()
+    local chests = {}
+    local keywords = {"chest", "loot", "crate", "box", "peti"}
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        local name = obj.Name:lower()
+        for _, kw in pairs(keywords) do
+            if name:find(kw) then
+                if obj:IsA("BasePart") then
+                    table.insert(chests, obj)
+                end
+                break
+            end
+        end
+    end
+    return chests
+end
+
+-- ============================================
+-- FUNGSI ESP
+-- ============================================
+
+local function CreatePlayerESP(plr, isKiller)
+    if not plr or not plr.Character then return end
+    
+    local char = plr.Character
+    local color = isKiller and getgenv().VD.Colors.Killer or getgenv().VD.Colors.Survivor
+    local head = char:FindFirstChild("Head")
+    local root = char:FindFirstChild("HumanoidRootPart")
+    
+    if not head or not root then return end
+    
+    -- HIGHLIGHT
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "VD_ESP"
+    highlight.FillColor = color
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.FillTransparency = 0.5
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = char
+    
+    -- HEALTH BAR
+    if getgenv().VD.ESP.Health then
+        local healthBar = Instance.new("BillboardGui")
+        healthBar.Name = "VD_HealthBar"
+        healthBar.Size = UDim2.new(0, 50, 0, 5)
+        healthBar.StudsOffset = Vector3.new(0, 3, 0)
+        healthBar.AlwaysOnTop = true
+        healthBar.Parent = head
+        
+        local bg = Instance.new("Frame")
+        bg.Size = UDim2.new(1, 0, 1, 0)
+        bg.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+        bg.BorderSizePixel = 0
+        bg.Parent = healthBar
+        
+        local fill = Instance.new("Frame")
+        fill.Name = "Fill"
+        fill.Size = UDim2.new(1, 0, 1, 0)
+        fill.BackgroundColor3 = isKiller and Color3.new(1, 0, 0) or Color3.new(0, 1, 0)
+        fill.BorderSizePixel = 0
+        fill.Parent = bg
+        
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum:GetPropertyChangedSignal("Health"):Connect(function()
+                fill.Size = UDim2.new(hum.Health / hum.MaxHealth, 0, 1, 0)
+            end)
+        end
+    end
+    
+    -- NAME TAG + DISTANCE
+    if getgenv().VD.ESP.Names then
+        local nameTag = Instance.new("BillboardGui")
+        nameTag.Name = "VD_NameTag"
+        nameTag.Size = UDim2.new(0, 150, 0, 40)
+        nameTag.StudsOffset = Vector3.new(0, 3.5, 0)
+        nameTag.AlwaysOnTop = true
+        nameTag.Parent = head
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = plr.Name
+        nameLabel.TextColor3 = Color3.new(1, 1, 1)
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        nameLabel.TextScaled = true
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.Parent = nameTag
+        
+        if getgenv().VD.ESP.Distance then
+            local distLabel = Instance.new("TextLabel")
+            distLabel.Size = UDim2.new(1, 0, 0.5, 0)
+            distLabel.Position = UDim2.new(0, 0, 0.5, 0)
+            distLabel.BackgroundTransparency = 1
+            distLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+            distLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+            distLabel.TextScaled = true
+            distLabel.Font = Enum.Font.Gotham
+            distLabel.Parent = nameTag
+            
+            coroutine.wrap(function()
+                while nameTag and nameTag.Parent do
+                    task.wait(0.2)
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local myRoot = LocalPlayer.Character.HumanoidRootPart
+                        local dist = math.floor((myRoot.Position - root.Position).magnitude)
+                        distLabel.Text = dist .. "m"
+                    end
+                end
+            end)()
         end
     end
 end
 
--- ==================================================
--- GUI WINDOW UTAMA - 8 TAB FITUR LENGKAP [citation:4][citation:9]
--- ==================================================
-local Window = Library:CreateWindow({
-    Title = "RYEENZY EXPLOIT",
-    SubTitle = "v 0.1 [BETA] [citation:9]",
-    ShowCustomCursor = true,
-    NotifySide = "Right",
-    Resizable = true,
-    Size = UDim2.new(0, 700, 0, 550),
-})
-
--- ==================================================
--- TAB 1: AUTO MINE (Penambangan Otomatis) [citation:4][citation:6]
--- ==================================================
-local MineTab = Window:AddTab("⛏️ Auto Mine", "pickaxe")
-
-local MineGroup = MineTab:AddLeftGroupbox("⚙️ Pengaturan Auto Mine")
-
--- Auto Mine Toggle (Fitur 1)
-MineGroup:AddToggle("AutoMine", {
-    Text = "⛏️ AUTO MINE",
-    Default = false,
-    Tooltip = "Menambang batu/ore di sekitar otomatis",
-})
-
--- Mode Penambangan (Fitur 2)
-MineGroup:AddDropdown("MineMode", {
-    Values = {"Semua Ore", "Prioritas Diamond", "Prioritas Coal", "Prioritas Gold", "Smart Mode (Terbaik)"},
-    Default = 5,
-    Text = "Mode Penambangan",
-})
-
--- Radius Tambang (Fitur 3)
-MineGroup:AddSlider("MineRadius", {
-    Text = "Radius Tambang",
-    Default = 20,
-    Min = 5,
-    Max = 50,
-    Rounding = 0,
-    Suffix = " stud",
-})
-
--- Kecepatan Tambang (Fitur 4)
-MineGroup:AddSlider("MineSpeed", {
-    Text = "Kecepatan Tambang",
-    Default = 0.3,
-    Min = 0.1,
-    Max = 2.0,
-    Rounding = 1,
-    Suffix = "s delay",
-})
-
--- Auto Equip Pickaxe (Fitur 5)
-MineGroup:AddToggle("AutoEquipPickaxe", {
-    Text = "Auto Equip Pickaxe Terbaik",
-    Default = true,
-})
-
--- Ore ESP (Fitur 6)
-local ESPGroup = MineTab:AddRightGroupbox("👁️ ESP & Visual")
-ESPGroup:AddToggle("OreESP", {
-    Text = "Ore ESP (Lihat Tembus Dinding)",
-    Default = false,
-    Tooltip = "Menampilkan lokasi ore dengan warna-warni",
-})
-
-ESPGroup:AddToggle("MobESP", {
-    Text = "Mob ESP",
-    Default = false,
-})
-
--- Priority Ore (Fitur 7)
-ESPGroup:AddDropdown("OrePriority", {
-    Values = {"Diamond > Gold > Coal", "Coal > Gold > Diamond", "Hanya Diamond", "Hanya Gold", "Semua Rata"},
-    Default = 1,
-    Text = "Prioritas Ore",
-})
-
--- ==================================================
--- TAB 2: AUTO FORGE (Penempaan Otomatis) [citation:5][citation:6]
--- ==================================================
-local ForgeTab = Window:AddTab("⚒️ Auto Forge", "hammer")
-
-local ForgeGroup = ForgeTab:AddLeftGroupbox("🏭 Pengaturan Auto Forge")
-
--- Auto Forge Toggle (Fitur 8)
-ForgeGroup:AddToggle("AutoForge", {
-    Text = "⚒️ AUTO FORGE",
-    Default = false,
-    Tooltip = "Menempa item secara otomatis",
-})
-
--- Fitur Auto Forge lengkap dari Vxeze Hub [citation:5]
-ForgeGroup:AddLabel("📋 Tahapan Forge Otomatis:")
-
-ForgeGroup:AddToggle("AutoMelt", {
-    Text = "Auto Melt (Melelehkan Ore)",
-    Default = true,
-})
-
-ForgeGroup:AddToggle("AutoPour", {
-    Text = "Auto Pour (Menuang Cairan)",
-    Default = true,
-})
-
-ForgeGroup:AddToggle("AutoHammer", {
-    Text = "Auto Hammer (Memukul)",
-    Default = true,
-})
-
-ForgeGroup:AddToggle("AutoMold", {
-    Text = "Auto Mold (Cetakan)",
-    Default = true,
-})
-
--- Target Item (Fitur 9)
-ForgeGroup:AddDropdown("ForgeTarget", {
-    Values = {"Weapon (Senjata)", "Armor (Baju Besi)", "Tool (Alat)", "Terlaris (Profit)", "Prioritas Quest"},
-    Default = 1,
-    Text = "Target Item",
-})
-
--- Quality Target (Fitur 10)
-ForgeGroup:AddDropdown("ForgeQuality", {
-    Values = {"Normal", "Good", "Perfect (Prioritas)", "Legendary"},
-    Default = 3,
-    Text = "Kualitas Target",
-})
-
--- Auto Complete Minigame (Fitur 11) [citation:4]
-local MinigameGroup = ForgeTab:AddRightGroupbox("🎮 Auto Minigame")
-
-MinigameGroup:AddToggle("AutoMinigame", {
-    Text = "Auto Selesaikan Minigame",
-    Default = true,
-    Tooltip = "Menyelesaikan semua minigame forging otomatis",
-})
-
-MinigameGroup:AddToggle("AutoPump", {
-    Text = "Auto Pump Heater",
-    Default = true,
-})
-
-MinigameGroup:AddToggle("AutoDump", {
-    Text = "Auto Dumping",
-    Default = true,
-})
-
--- ==================================================
--- TAB 3: AUTO COMBAT (Pertarungan Otomatis) [citation:5][citation:9]
--- ==================================================
-local CombatTab = Window:AddTab("⚔️ Auto Combat", "sword")
-
-local CombatGroup = CombatTab:AddLeftGroupbox("🤺 Pengaturan Combat")
-
--- Auto Kill Toggle (Fitur 12)
-CombatGroup:AddToggle("AutoKill", {
-    Text = "⚔️ AUTO KILL",
-    Default = false,
-    Tooltip = "Membunuh monster di sekitar otomatis",
-})
-
--- Kill Aura (Fitur 13) [citation:9]
-CombatGroup:AddToggle("KillAura", {
-    Text = "💫 KILL AURA",
-    Default = false,
-    Tooltip = "Damage semua musuh dalam radius",
-})
-
--- Radius Serangan
-CombatGroup:AddSlider("AttackRadius", {
-    Text = "Radius Serangan",
-    Default = 15,
-    Min = 5,
-    Max = 30,
-    Rounding = 0,
-    Suffix = " stud",
-})
-
--- Target Priority (Fitur 14)
-CombatGroup:AddDropdown("TargetPriority", {
-    Values = {"Terdekat", "HP Terendah", "Level Tertinggi", "Boss Priority", "Zombie Priority"},
-    Default = 5,
-    Text = "Prioritas Target",
-})
-
--- Auto Block/Parry (Fitur 15) [citation:8]
-CombatGroup:AddToggle("AutoParry", {
-    Text = "Auto Parry/Block",
-    Default = true,
-    Tooltip = "Otomatis memblokir serangan musuh",
-})
-
--- Auto Potion (Fitur 16) [citation:5]
-local PotionGroup = CombatTab:AddRightGroupbox("🧪 Auto Potion")
-
-PotionGroup:AddToggle("AutoPotion", {
-    Text = "Auto Potion (Health)",
-    Default = true,
-})
-
-PotionGroup:AddSlider("HealthThreshold", {
-    Text = "Health Threshold",
-    Default = 50,
-    Min = 20,
-    Max = 90,
-    Rounding = 0,
-    Suffix = "%",
-})
-
-PotionGroup:AddToggle("AutoStrengthPotion", {
-    Text = "Auto Strength Potion",
-    Default = false,
-})
-
-PotionGroup:AddToggle("AutoLuckPotion", {
-    Text = "Auto Luck Potion",
-    Default = false,
-})
-
--- ==================================================
--- TAB 4: AUTO FARM & DUPE (Fitur Eksklusif) [citation:9][citation:10]
--- ==================================================
-local FarmTab = Window:AddTab("🌾 Auto Farm", "flower")
-
-local FarmGroup = FarmTab:AddLeftGroupbox("📦 Auto Farm Resources")
-
--- Auto Farm Resources (Fitur 17)
-FarmGroup:AddToggle("AutoFarm", {
-    Text = "🌾 AUTO FARM (SEMUA)",
-    Default = false,
-    Tooltip = "Menggabungkan semua fungsi farming",
-})
-
--- Pilihan Resources
-FarmGroup:AddDropdown("FarmPriority", {
-    Values = {"Ore Priority", "Mob Priority", "Wood Priority", "Chest Priority", "Balance"},
-    Default = 5,
-    Text = "Prioritas Farming",
-})
-
--- DUPE SYSTEM (Fitur 18) [citation:10]
-local DupeGroup = FarmTab:AddRightGroupbox("💎 DUPE SYSTEM (Eksklusif)")
-
-DupeGroup:AddLabel("⚠️ GUNAKAN DENGAN BIJAK - Resiko Tinggi", true)
-
-DupeGroup:AddToggle("ItemDupe", {
-    Text = "💎 ITEM DUPLICATION",
-    Default = false,
-    Risky = true,
-    Tooltip = "Menduplikasi item di inventory (350K+ users) [citation:9]",
-})
-
-DupeGroup:AddDropdown("DupeTarget", {
-    Values = {"Ore", "Weapon", "Armor", "Potion", "Semua Item"},
-    Default = 5,
-    Text = "Target Dupe",
-})
-
-DupeGroup:AddSlider("DupeAmount", {
-    Text = "Jumlah Duplikasi",
-    Default = 5,
-    Min = 1,
-    Max = 50,
-    Rounding = 0,
-    Suffix = "x",
-})
-
--- ==================================================
--- TAB 5: TELEPORT & NAVIGASI [citation:4][citation:6]
--- ==================================================
-local TeleportTab = Window:AddTab("🗺️ Teleport", "map-pin")
-
-local TeleGroup = TeleportTab:AddLeftGroupbox("📍 Lokasi Teleport")
-
--- Daftar lokasi lengkap
-local locations = {
-    "🏁 Spawn Area",
-    "🏪 Shop/Merchant",
-    "⛰️ Mine Area 1 (Pemula)",
-    "⛰️ Mine Area 2 (Lanjutan)",
-    "⛰️ Deep Mine (Expert)",
-    "🏰 Boss Arena",
-    "🧟 Zombie Cave",
-    "🔥 Lava Zone",
-    "❄️ Frozen Cave",
-    "🏝️ Resource Island",
-    "⚒️ Forge Area",
-    "💀 Esoteric Depths",
-    "🗿 Lost Isle",
-}
-
-TeleGroup:AddDropdown("TeleportLoc", {
-    Values = locations,
-    Default = 3,
-    Text = "Pilih Lokasi",
-})
-
--- Tombol Teleport (Fitur 19)
-TeleGroup:AddButton({
-    Text = "🚀 TELEPORT SEKARANG",
-    Func = function()
-        local loc = Options.TeleportLoc.Value
-        Library:Notify("🔄 Mencari lokasi: " .. loc, 2)
-        
-        -- Cari lokasi di workspace
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj.Name:find(loc:gsub("^[^ ]+ ", "")) or loc:find(obj.Name) then
-                if obj:IsA("Part") or obj:IsA("Model") then
-                    local cf = obj:IsA("Model") and (obj.PrimaryPart and obj.PrimaryPart.CFrame or obj:GetModelCFrame()) or obj.CFrame
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        player.Character.HumanoidRootPart.CFrame = cf + Vector3.new(0, 5, 0)
-                        Library:Notify("✅ Teleport ke " .. loc, 2)
-                        return
+-- TRACERS
+local tracers = {}
+RunService.RenderStepped:Connect(function()
+    if not getgenv().VD.ESP.Enabled or not getgenv().VD.ESP.Tracers then
+        for _, tracer in pairs(tracers) do
+            if tracer then tracer.Visible = false end
+        end
+        return
+    end
+    
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    
+    local killer = GetKiller()
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    
+    for i, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local rootPart = plr.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local isKiller = (plr == killer)
+                
+                if (isKiller and getgenv().VD.ESP.Killer) or (not isKiller and getgenv().VD.ESP.Survivors) then
+                    if not tracers[i] then
+                        tracers[i] = Drawing.new("Line")
+                        tracers[i].Thickness = 2
+                        tracers[i].Transparency = 0.7
                     end
+                    
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                    if onScreen then
+                        tracers[i].From = screenCenter
+                        tracers[i].To = Vector2.new(screenPos.X, screenPos.Y)
+                        tracers[i].Color = isKiller and getgenv().VD.Colors.Killer or getgenv().VD.Colors.Survivor
+                        tracers[i].Visible = true
+                    else
+                        tracers[i].Visible = false
+                    end
+                elseif tracers[i] then
+                    tracers[i].Visible = false
                 end
             end
         end
-        Library:Notify("❌ Lokasi tidak ditemukan!", 2)
-    end,
-})
+    end
+end)
 
--- Auto Teleport (Fitur 20)
-local AutoTPGroup = TeleportTab:AddRightGroupbox("🤖 Auto Teleport")
+-- ESP Generator
+local function CreateGeneratorESP(gen)
+    if not gen or not gen:IsA("BasePart") then return end
+    gen.BrickColor = BrickColor.new("Cyan")
+    gen.Material = Enum.Material.Neon
+    gen.Transparency = 0.3
+end
 
-AutoTPGroup:AddToggle("AutoTeleport", {
-    Text = "Auto Teleport ke Best Spot",
+-- ESP Hook
+local function CreateHookESP(hook)
+    if not hook or not hook:IsA("BasePart") then return end
+    hook.BrickColor = BrickColor.new("Bright orange")
+    hook.Material = Enum.Material.Neon
+    hook.Transparency = 0.2
+end
+
+-- ESP Chest
+local function CreateChestESP(chest)
+    if not chest or not chest:IsA("BasePart") then return end
+    chest.BrickColor = BrickColor.new("Bright yellow")
+    chest.Material = Enum.Material.Neon
+    chest.Transparency = 0.2
+end
+
+local function RemoveAllESP()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr.Character then
+            local highlight = plr.Character:FindFirstChildOfClass("Highlight")
+            if highlight and highlight.Name == "VD_ESP" then highlight:Destroy() end
+            local healthBar = plr.Character:FindFirstChild("VD_HealthBar", true)
+            if healthBar then healthBar:Destroy() end
+            local nameTag = plr.Character:FindFirstChild("VD_NameTag", true)
+            if nameTag then nameTag:Destroy() end
+        end
+    end
+    
+    for _, gen in pairs(GetGenerators()) do
+        if gen:IsA("BasePart") then gen.Material = Enum.Material.Plastic gen.Transparency = 0 end
+    end
+    
+    for _, hook in pairs(GetHooks()) do
+        if hook:IsA("BasePart") then hook.Material = Enum.Material.Plastic hook.Transparency = 0 end
+    end
+    
+    for _, chest in pairs(GetChests()) do
+        if chest:IsA("BasePart") then chest.Material = Enum.Material.Plastic chest.Transparency = 0 end
+    end
+end
+
+-- ============================================
+-- FUNGSI AUTO FEATURES
+-- ============================================
+
+local function DoAutoParry()
+    if not getgenv().VD.Survivor.AutoParry then return end
+    local killer = GetKiller()
+    if not killer or not killer.Character then return end
+    
+    local killerRoot = killer.Character:FindFirstChild("HumanoidRootPart")
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    
+    if killerRoot and myRoot and (killerRoot.Position - myRoot.Position).magnitude < 15 then
+        for _, obj in pairs(LocalPlayer.Character:GetDescendants()) do
+            if obj:IsA("RemoteEvent") and obj.Name:lower():find("parry") then
+                pcall(function() obj:FireServer() end)
+            end
+        end
+    end
+end
+
+local function DoAutoGenerator()
+    if not getgenv().VD.Survivor.AutoGenerator then return end
+    local gens = GetGenerators()
+    if #gens == 0 then return end
+    
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    
+    local closestGen = nil
+    local closestDist = math.huge
+    
+    for _, gen in pairs(gens) do
+        local genPos = gen:IsA("BasePart") and gen.Position
+        if genPos then
+            local dist = (myRoot.Position - genPos).magnitude
+            if dist < closestDist then
+                closestDist = dist
+                closestGen = gen
+            end
+        end
+    end
+    
+    if closestGen then
+        if closestDist > 5 then
+            myRoot.CFrame = CFrame.new(closestGen.Position) + Vector3.new(0, 3, 0)
+        else
+            if closestGen:IsA("BasePart") then
+                firetouchinterest(myRoot, closestGen, 0)
+                firetouchinterest(myRoot, closestGen, 1)
+            end
+        end
+    end
+end
+
+local function DoAutoKill()
+    if not getgenv().VD.Killer.AutoKill then return end
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    
+    local closestSurvivor = nil
+    local closestDist = math.huge
+    
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local root = plr.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local dist = (myRoot.Position - root.Position).magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closestSurvivor = plr
+                end
+            end
+        end
+    end
+    
+    if closestSurvivor and closestDist < 20 then
+        for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
+            if tool:IsA("Tool") then
+                tool:Activate()
+            end
+        end
+        myRoot.CFrame = CFrame.lookAt(myRoot.Position, closestSurvivor.Character.HumanoidRootPart.Position)
+    end
+end
+
+-- ============================================
+-- MEMBUAT TABS
+-- ============================================
+local Tabs = {
+    ESP = Window:AddTab("ESP", "eye"),
+    Survivor = Window:AddTab("Survivor", "user"),
+    Killer = Window:AddTab("Killer", "swords"),
+    Movement = Window:AddTab("Movement", "zap"),
+    Visuals = Window:AddTab("Visuals", "sparkles"),
+    Colors = Window:AddTab("Colors", "palette"),
+    Settings = Window:AddTab("Settings", "settings"),
+}
+
+-- ============================================
+-- ESP TAB
+-- ============================================
+local ESPGroup = Tabs.ESP:AddLeftGroupbox("ESP Settings")
+
+ESPGroup:AddToggle("ESPEnabled", {
+    Text = "Enable ESP",
+    Tooltip = "Aktifkan semua fitur ESP",
     Default = false,
+    Callback = function(v)
+        getgenv().VD.ESP.Enabled = v
+        if not v then RemoveAllESP() end
+        Library:Notify(v and "ESP Activated" or "ESP Deactivated")
+    end
 })
 
-AutoTPGroup:AddSlider("TeleportInterval", {
-    Text = "Interval (menit)",
-    Default = 15,
-    Min = 5,
-    Max = 60,
-    Rounding = 0,
-    Suffix = " menit",
-})
+ESPGroup:AddDivider()
 
--- ==================================================
--- TAB 6: AUTO SELL & INVENTORY [citation:4][citation:6]
--- ==================================================
-local SellTab = Window:AddTab("💰 Auto Sell", "shopping-cart")
-
-local SellGroup = SellTab:AddLeftGroupbox("🏪 Pengaturan Jual")
-
--- Auto Sell (Fitur 21)
-SellGroup:AddToggle("AutoSell", {
-    Text = "💰 AUTO SELL",
+ESPGroup:AddToggle("ShowSurvivors", {
+    Text = "Show Survivors",
     Default = true,
-    Tooltip = "Otomatis menjual item ke vendor",
+    Callback = function(v) getgenv().VD.ESP.Survivors = v end
 })
 
--- Sell Threshold
-SellGroup:AddSlider("SellThreshold", {
-    Text = "Threshold Inventory (%)",
-    Default = 80,
-    Min = 30,
-    Max = 100,
-    Rounding = 0,
-    Suffix = "%",
+ESPGroup:AddToggle("ShowKiller", {
+    Text = "Show Killer",
+    Default = true,
+    Callback = function(v) getgenv().VD.ESP.Killer = v end
 })
 
--- Priority Jual
-SellGroup:AddDropdown("SellPriority", {
-    Values = {"Common First", "Rare First", "Legendary+ Keep", "Semua Kecuali Equipment"},
-    Default = 1,
-    Text = "Prioritas Jual",
+ESPGroup:AddToggle("ShowGenerators", {
+    Text = "Show Generators",
+    Default = true,
+    Callback = function(v) getgenv().VD.ESP.Generators = v end
 })
 
--- Auto Buy (Fitur 22)
-SellGroup:AddToggle("AutoBuyPickaxe", {
-    Text = "Auto Buy Pickaxe Terbaik",
+ESPGroup:AddToggle("ShowHooks", {
+    Text = "Show Hooks",
+    Default = true,
+    Callback = function(v) getgenv().VD.ESP.Hooks = v end
+})
+
+ESPGroup:AddToggle("ShowChests", {
+    Text = "Show Chests",
+    Default = true,
+    Callback = function(v) getgenv().VD.ESP.Chests = v end
+})
+
+ESPGroup:AddDivider()
+
+ESPGroup:AddToggle("ShowTracers", {
+    Text = "Show Tracers",
+    Default = true,
+    Callback = function(v) getgenv().VD.ESP.Tracers = v end
+})
+
+ESPGroup:AddToggle("ShowNames", {
+    Text = "Show Names",
+    Default = true,
+    Callback = function(v) getgenv().VD.ESP.Names = v end
+})
+
+ESPGroup:AddToggle("ShowDistance", {
+    Text = "Show Distance",
+    Default = true,
+    Callback = function(v) getgenv().VD.ESP.Distance = v end
+})
+
+ESPGroup:AddToggle("ShowHealth", {
+    Text = "Show Health Bars",
+    Default = true,
+    Callback = function(v) getgenv().VD.ESP.Health = v end
+})
+
+-- ============================================
+-- COLORS TAB (dengan ColorPicker)
+-- ============================================
+local ColorsGroup = Tabs.Colors:AddLeftGroupbox("ESP Colors")
+
+ColorsGroup:AddToggle("SurvivorColorToggle", {
+    Text = "Custom Survivor Color",
+    Default = true,
+})  :AddColorPicker("SurvivorColor", {
+    Default = Color3.new(0, 1, 0),
+    Title = "Survivor Color",
+    Callback = function(v) getgenv().VD.Colors.Survivor = v end
+})
+
+ColorsGroup:AddToggle("KillerColorToggle", {
+    Text = "Custom Killer Color",
+    Default = true,
+})  :AddColorPicker("KillerColor", {
+    Default = Color3.new(1, 0, 0),
+    Title = "Killer Color",
+    Callback = function(v) getgenv().VD.Colors.Killer = v end
+})
+
+ColorsGroup:AddToggle("HookColorToggle", {
+    Text = "Custom Hook Color",
+    Default = true,
+})  :AddColorPicker("HookColor", {
+    Default = Color3.new(1, 0.5, 0),
+    Title = "Hook Color",
+    Callback = function(v) getgenv().VD.Colors.Hook = v end
+})
+
+ColorsGroup:AddToggle("GeneratorColorToggle", {
+    Text = "Custom Generator Color",
+    Default = true,
+})  :AddColorPicker("GeneratorColor", {
+    Default = Color3.new(0, 1, 1),
+    Title = "Generator Color",
+    Callback = function(v) getgenv().VD.Colors.Generator = v end
+})
+
+ColorsGroup:AddToggle("ChestColorToggle", {
+    Text = "Custom Chest Color",
+    Default = true,
+})  :AddColorPicker("ChestColor", {
+    Default = Color3.new(1, 1, 0),
+    Title = "Chest Color",
+    Callback = function(v) getgenv().VD.Colors.Chest = v end
+})
+
+-- ============================================
+-- SURVIVOR TAB
+-- ============================================
+local SurvivorGroup = Tabs.Survivor:AddLeftGroupbox("Survivor Features")
+
+SurvivorGroup:AddToggle("AutoParry", {
+    Text = "Auto Parry",
+    Tooltip = "Otomatis memblokir serangan killer",
     Default = false,
+    Callback = function(v) getgenv().VD.Survivor.AutoParry = v end
 })
 
-SellGroup:AddToggle("AutoBuyPotion", {
-    Text = "Auto Buy Potion",
+SurvivorGroup:AddToggle("AutoGenerator", {
+    Text = "Auto Generator",
+    Tooltip = "Otomatis memperbaiki generator",
     Default = false,
+    Callback = function(v) getgenv().VD.Survivor.AutoGenerator = v end
 })
 
--- Statistik (Fitur 23)
-local StatsGroup = SellTab:AddRightGroupbox("📊 Statistik")
-local oreCountLabel = StatsGroup:AddLabel("Total Ore: 0")
-local coinLabel = StatsGroup:AddLabel("Koin: 0")
-local itemCountLabel = StatsGroup:AddLabel("Items: 0")
-local sessionTimeLabel = StatsGroup:AddLabel("Sesi: 0 menit")
+SurvivorGroup:AddToggle("AutoChest", {
+    Text = "Auto Chest",
+    Tooltip = "Otomatis membuka chest",
+    Default = false,
+    Callback = function(v) getgenv().VD.Survivor.AutoChest = v end
+})
 
--- ==================================================
--- TAB 7: PLAYER BOOSTER [citation:9]
--- ==================================================
-local PlayerTab = Window:AddTab("⚡ Player", "user")
+SurvivorGroup:AddToggle("NoSkillCheck", {
+    Text = "No Skill Check",
+    Tooltip = "Menghilangkan skill check",
+    Default = false,
+    Callback = function(v) getgenv().VD.Survivor.NoSkillCheck = v end
+})
 
-local PlayerGroup = PlayerTab:AddLeftGroupbox("🦾 Player Booster")
+-- ============================================
+-- KILLER TAB
+-- ============================================
+local KillerGroup = Tabs.Killer:AddLeftGroupbox("Killer Features")
 
--- WalkSpeed (Fitur 24)
-PlayerGroup:AddSlider("WalkSpeed", {
-    Text = "WalkSpeed",
+KillerGroup:AddToggle("AutoKill", {
+    Text = "Auto Kill",
+    Tooltip = "Otomatis membunuh survivor terdekat",
+    Default = false,
+    Risky = true,
+    Callback = function(v) getgenv().VD.Killer.AutoKill = v end
+})
+
+KillerGroup:AddToggle("NoCooldown", {
+    Text = "No Cooldown",
+    Tooltip = "Menghilangkan cooldown ability",
+    Default = false,
+    Callback = function(v) getgenv().VD.Killer.NoCooldown = v end
+})
+
+KillerGroup:AddToggle("AntiStun", {
+    Text = "Anti Stun",
+    Tooltip = "Mencegah efek stun",
+    Default = false,
+    Callback = function(v) getgenv().VD.Killer.AntiStun = v end
+})
+
+-- ============================================
+-- MOVEMENT TAB
+-- ============================================
+local MovementGroup = Tabs.Movement:AddLeftGroupbox("Movement")
+
+MovementGroup:AddSlider("Walkspeed", {
+    Text = "Walk Speed",
     Default = 16,
     Min = 16,
-    Max = 350,
+    Max = 200,
     Rounding = 0,
-    Suffix = " ws",
+    Suffix = "studs/s",
+    Callback = function(v)
+        getgenv().VD.Movement.Walkspeed = v
+        if LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = v end
+        end
+    end
 })
 
--- JumpPower
-PlayerGroup:AddSlider("JumpPower", {
-    Text = "JumpPower",
+MovementGroup:AddSlider("JumpPower", {
+    Text = "Jump Power",
     Default = 50,
     Min = 50,
-    Max = 300,
+    Max = 200,
     Rounding = 0,
-    Suffix = " jp",
+    Callback = function(v)
+        getgenv().VD.Movement.JumpPower = v
+        if LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.JumpPower = v end
+        end
+    end
 })
 
--- Infinite Jump (Fitur 25)
-PlayerGroup:AddToggle("InfiniteJump", {
-    Text = "🦘 Infinite Jump",
+MovementGroup:AddToggle("NoClip", {
+    Text = "NoClip",
+    Tooltip = "Tembus dinding",
     Default = false,
+    Callback = function(v) getgenv().VD.Movement.NoClip = v end
 })
 
--- NoClip (Fitur 26) [citation:8]
-PlayerGroup:AddToggle("NoClip", {
-    Text = "🌀 NoClip (Tembus Dinding)",
+MovementGroup:AddToggle("Fly", {
+    Text = "Fly Mode",
+    Tooltip = "Mode terbang",
     Default = false,
-    Risky = true,
+    Callback = function(v) getgenv().VD.Movement.Fly = v end
 })
 
--- Fly (Fitur 27)
-PlayerGroup:AddToggle("Fly", {
-    Text = "🕊️ Fly Mode",
+MovementGroup:AddToggle("Teleport", {
+    Text = "Teleport Mode",
+    Tooltip = "Klik kiri untuk teleport",
     Default = false,
+    Callback = function(v) getgenv().VD.Movement.Teleport = v end
 })
 
--- Anti AFK (Fitur 28)
-local SafetyGroup = PlayerTab:AddRightGroupbox("🛡️ Keamanan")
+-- ============================================
+-- VISUALS TAB
+-- ============================================
+local VisualsGroup = Tabs.Visuals:AddLeftGroupbox("Visuals")
 
-SafetyGroup:AddToggle("AntiAFK", {
-    Text = "🛡️ Anti AFK / Anti Kick",
-    Default = true,
-})
-
-SafetyGroup:AddToggle("AntiLag", {
-    Text = "⚡ Anti Lag (Render)",
+VisualsGroup:AddToggle("Fullbright", {
+    Text = "Fullbright",
+    Tooltip = "Terangi seluruh map",
     Default = false,
+    Callback = function(v)
+        getgenv().VD.Visuals.Fullbright = v
+        if v then
+            Lighting.Ambient = Color3.new(1, 1, 1)
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 12
+        else
+            Lighting.Ambient = Color3.new(0, 0, 0)
+            Lighting.Brightness = 1
+        end
+    end
 })
 
-SafetyGroup:AddToggle("SpawnProtect", {
-    Text = "Spawn Protection",
-    Default = true,
+VisualsGroup:AddToggle("NoFog", {
+    Text = "No Fog",
+    Tooltip = "Hilangkan fog",
+    Default = false,
+    Callback = function(v)
+        getgenv().VD.Visuals.NoFog = v
+        Lighting.FogEnd = v and 100000 or 1000
+    end
 })
 
--- ==================================================
--- TAB 8: SETTINGS & KONFIGURASI
--- ==================================================
-local SettingsTab = Window:AddTab("⚙️ Settings", "settings")
+-- ============================================
+-- SETTINGS TAB (Theme & Save)
+-- ============================================
+local SettingsGroup = Tabs.Settings:AddLeftGroupbox("Menu Settings")
 
-local UIGroup = SettingsTab:AddLeftGroupbox("🖥️ UI Settings")
-
--- Menu Toggle
-UIGroup:AddButton({
+SettingsGroup:AddKeybind("MenuKeybind", {
     Text = "Toggle Menu",
-    Func = function()
-        Library:Toggle()
-    end,
-})
-
-UIGroup:AddLabel("Menu Keybind"):AddKeyPicker("MenuKeybind", {
     Default = "RightShift",
-    Text = "Keybind",
-    NoUI = true,
-    Callback = function()
-        Library:Toggle()
-    end,
+    Callback = function() Library:SetOpen(not Library.Open) end
 })
 
-UIGroup:AddDivider()
+SettingsGroup:AddToggle("ShowCustomCursor", {
+    Text = "Custom Cursor",
+    Default = true,
+    Callback = function(v) Library.ShowCustomCursor = v end
+})
 
--- Setup SaveManager (save config)
+-- Theme Manager
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
-SaveManager:SetFolder("RYEENZY/TheForgeUltimate")
-SaveManager:IgnoreThemeSettings()
 SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+ThemeManager:ApplyToTab(Tabs.Settings)
+SaveManager:ApplyToTab(Tabs.Settings)
 
-ThemeManager:ApplyToTab(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
+-- ============================================
+-- INFO LABEL
+-- ============================================
+local InfoGroup = Tabs.Survivor:AddRightGroupbox("Information")
+InfoGroup:AddLabel("Player: " .. LocalPlayer.Name, false, "PlayerLabel")
+InfoGroup:AddLabel("Game: Violence District", false, "GameLabel")
+InfoGroup:AddLabel("Fitur Lengkap 2025", false, "FiturLabel")
 
--- ==================================================
--- IMPLEMENTASI FITUR - SEMUA PASTI WORK
--- ==================================================
-
--- Variabel kontrol
-local connections = {}
-local stats = {ore = 0, coins = 0, items = 0, startTime = os.time()}
-
--- 1. AUTO MINE IMPLEMENTATION
-Toggles.AutoMine:OnChanged(function()
-    if Toggles.AutoMine.Value then
-        Library:Notify("⛏️ Auto Mine dimulai - Mode: " .. Options.MineMode.Value, 3)
-        
-        if connections.mine then connections.mine:Disconnect() end
-        
-        connections.mine = RunService.Heartbeat:Connect(function()
-            if not Toggles.AutoMine.Value then return end
+-- ============================================
+-- MAIN LOOP ESP
+-- ============================================
+coroutine.wrap(function()
+    while task.wait(0.3) do
+        if getgenv().VD.ESP.Enabled then
+            local killer = GetKiller()
             
-            -- Cari ore di sekitar berdasarkan radius
-            local radius = Options.MineRadius.Value
-            local character = player.Character
-            if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-            
-            local pos = character.HumanoidRootPart.Position
-            local closestOre = nil
-            local closestDist = radius + 1
-            
-            -- Scan untuk ore/rocks
-            for _, obj in pairs(Workspace:GetDescendants()) do
-                if obj:IsA("Part") and (obj.Name:lower():find("rock") or obj.Name:lower():find("ore") or obj.Name:lower():find("stone")) then
-                    local dist = (obj.Position - pos).Magnitude
-                    if dist < radius and dist < closestDist then
-                        closestOre = obj
-                        closestDist = dist
-                    end
-                end
-            end
-            
-            -- Jika ada ore, tambang
-            if closestOre then
-                -- Equip pickaxe
-                if Toggles.AutoEquipPickaxe.Value then
-                    local pickaxe = player.Backpack:FindFirstChild("Pickaxe") or 
-                                   player.Character:FindFirstChild("Pickaxe")
-                    if pickaxe and pickaxe.Parent == player.Backpack then
-                        player.Character.Humanoid:EquipTool(pickaxe)
-                    end
-                end
-                
-                -- Arahkan ke ore
-                character.HumanoidRootPart.CFrame = CFrame.new(closestOre.Position) * CFrame.new(0, 0, 3)
-                
-                -- Remote mining
-                if remotes.mine then
-                    pcall(function()
-                        remotes.mine:FireServer(closestOre)
-                    end)
-                else
-                    -- Fallback: simulasi klik
-                    VirtualUser:ClickButton1(Vector2.new())
-                end
-                
-                stats.ore = stats.ore + 1
-            end
-            
-            task.wait(Options.MineSpeed.Value)
-        end)
-        
-    else
-        if connections.mine then connections.mine:Disconnect() end
-    end
-end)
-
--- 2. AUTO FORGE IMPLEMENTATION [citation:5]
-Toggles.AutoForge:OnChanged(function()
-    if Toggles.AutoForge.Value then
-        Library:Notify("⚒️ Auto Forge dimulai - Target: " .. Options.ForgeTarget.Value, 3)
-        
-        if connections.forge then connections.forge:Disconnect() end
-        
-        connections.forge = RunService.Heartbeat:Connect(function()
-            if not Toggles.AutoForge.Value then return end
-            
-            -- Auto Melt
-            if Toggles.AutoMelt.Value and remotes.forge then
-                pcall(function() remotes.forge:FireServer("Melt") end)
-                task.wait(0.2)
-            end
-            
-            -- Auto Pour
-            if Toggles.AutoPour.Value and remotes.forge then
-                pcall(function() remotes.forge:FireServer("Pour") end)
-                task.wait(0.2)
-            end
-            
-            -- Auto Hammer
-            if Toggles.AutoHammer.Value and remotes.forge then
-                pcall(function() remotes.forge:FireServer("Hammer") end)
-                task.wait(0.2)
-            end
-            
-            -- Auto Mold
-            if Toggles.AutoMold.Value and remotes.forge then
-                pcall(function() remotes.forge:FireServer("Mold") end)
-                task.wait(0.2)
-            end
-            
-            stats.items = stats.items + 1
-            task.wait(0.5)
-        end)
-        
-    else
-        if connections.forge then connections.forge:Disconnect() end
-    end
-end)
-
--- 3. AUTO KILL IMPLEMENTATION [citation:9]
-Toggles.AutoKill:OnChanged(function()
-    if Toggles.AutoKill.Value then
-        Library:Notify("⚔️ Auto Kill dimulai", 2)
-        
-        if connections.kill then connections.kill:Disconnect() end
-        
-        connections.kill = RunService.Heartbeat:Connect(function()
-            if not Toggles.AutoKill.Value then return end
-            
-            -- Cari musuh terdekat
-            local radius = Options.AttackRadius.Value
-            local character = player.Character
-            if not character then return end
-            
-            local pos = character.HumanoidRootPart.Position
-            local closestEnemy = nil
-            local closestDist = radius + 1
-            
-            for _, obj in pairs(Workspace:GetDescendants()) do
-                if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj ~= character then
-                    local humanoid = obj:FindFirstChild("Humanoid")
-                    if humanoid and humanoid.Health > 0 then
-                        local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
-                        if root then
-                            local dist = (root.Position - pos).Magnitude
-                            if dist < radius and dist < closestDist then
-                                closestEnemy = obj
-                                closestDist = dist
-                            end
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and plr.Character then
+                    local isKiller = (plr == killer)
+                    if (isKiller and getgenv().VD.ESP.Killer) or (not isKiller and getgenv().VD.ESP.Survivors) then
+                        if not plr.Character:FindFirstChildOfClass("Highlight") then
+                            CreatePlayerESP(plr, isKiller)
                         end
                     end
                 end
             end
             
-            -- Serang musuh
-            if closestEnemy then
-                character.HumanoidRootPart.CFrame = closestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
-                
-                if remotes.attack then
-                    pcall(function() remotes.attack:FireServer(closestEnemy) end)
-                end
-                
-                -- Kill Aura [citation:9]
-                if Toggles.KillAura.Value then
-                    for _, enemy in pairs(Workspace:GetDescendants()) do
-                        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
-                            local dist = (enemy.HumanoidRootPart.Position - pos).Magnitude
-                            if dist < radius then
-                                pcall(function() remotes.attack:FireServer(enemy) end)
-                            end
-                        end
-                    end
+            if getgenv().VD.ESP.Generators then
+                for _, gen in pairs(GetGenerators()) do
+                    if gen:IsA("BasePart") then CreateGeneratorESP(gen) end
                 end
             end
             
-            task.wait(0.3)
-        end)
-        
-    else
-        if connections.kill then connections.kill:Disconnect() end
-    end
-end)
-
--- 4. DUPE SYSTEM IMPLEMENTATION [citation:10]
-Toggles.ItemDupe:OnChanged(function()
-    if Toggles.ItemDupe.Value then
-        Library:Notify("⚠️ DUPE SYSTEM AKTIF - Resiko Tinggi!", 4)
-        
-        if connections.dupe then connections.dupe:Disconnect() end
-        
-        connections.dupe = RunService.Heartbeat:Connect(function()
-            if not Toggles.ItemDupe.Value then return end
-            
-            -- Dupe logic - berdasarkan inventory sync delay [citation:10]
-            local amount = Options.DupeAmount.Value
-            for i = 1, amount do
-                -- Simulasi dupe dengan remote event
-                if remotes.sell then
-                    pcall(function()
-                        remotes.sell:FireServer("Duplicate", Options.DupeTarget.Value)
-                    end)
-                end
-                task.wait(0.1)
-            end
-            
-            Library:Notify("💎 Duplikasi " .. amount .. "x selesai", 2)
-            task.wait(5) -- Cooldown
-        end)
-        
-    else
-        if connections.dupe then connections.dupe:Disconnect() end
-    end
-end)
-
--- 5. AUTO SELL IMPLEMENTATION [citation:4]
-Toggles.AutoSell:OnChanged(function()
-    if Toggles.AutoSell.Value then
-        Library:Notify("💰 Auto Sell aktif", 2)
-        
-        if connections.sell then connections.sell:Disconnect() end
-        
-        connections.sell = RunService.Heartbeat:Connect(function()
-            if not Toggles.AutoSell.Value then return end
-            
-            -- Cari vendor/shop terdekat
-            local shop = Workspace:FindFirstChild("Shop") or Workspace:FindFirstChild("Merchant") or 
-                        Workspace:FindFirstChild("Vendor") or Workspace:FindFirstChild("NPC")
-            
-            if shop and player.Character then
-                -- Teleport ke shop
-                player.Character.HumanoidRootPart.CFrame = shop.CFrame + Vector3.new(0, 5, 0)
-                task.wait(1)
-                
-                -- Trigger sell
-                if remotes.sell then
-                    pcall(function() remotes.sell:FireServer("SellAll") end)
-                end
-                
-                stats.coins = stats.coins + math.random(100, 500)
-                task.wait(5)
-            end
-        end)
-        
-    else
-        if connections.sell then connections.sell:Disconnect() end
-    end
-end)
-
--- 6. WALKSPEED HANDLER
-Options.WalkSpeed:OnChanged(function()
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = Options.WalkSpeed.Value
-    end
-end)
-
--- 7. JUMPPOWER HANDLER
-Options.JumpPower:OnChanged(function()
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.JumpPower = Options.JumpPower.Value
-    end
-end)
-
--- 8. INFINITE JUMP
-local infiniteJumpConn = nil
-Toggles.InfiniteJump:OnChanged(function()
-    if Toggles.InfiniteJump.Value then
-        infiniteJumpConn = UserInputService.JumpRequest:Connect(function()
-            if player.Character and player.Character:FindFirstChild("Humanoid") then
-                player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
-        end)
-    else
-        if infiniteJumpConn then infiniteJumpConn:Disconnect() end
-    end
-end)
-
--- 9. NOCLIP [citation:8]
-local noclipConn = nil
-Toggles.NoClip:OnChanged(function()
-    if Toggles.NoClip.Value then
-        noclipConn = RunService.Stepped:Connect(function()
-            if player.Character then
-                for _, part in pairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
+            if getgenv().VD.ESP.Hooks then
+                for _, hook in pairs(GetHooks()) do
+                    if hook:IsA("BasePart") then CreateHookESP(hook) end
                 end
             end
-        end)
-    else
-        if noclipConn then noclipConn:Disconnect() end
+            
+            if getgenv().VD.ESP.Chests then
+                for _, chest in pairs(GetChests()) do
+                    if chest:IsA("BasePart") then CreateChestESP(chest) end
+                end
+            end
+        else
+            RemoveAllESP()
+        end
+    end
+end)()
+
+-- ============================================
+-- FEATURE LOOPS
+-- ============================================
+RunService.Heartbeat:Connect(DoAutoParry)
+coroutine.wrap(function() while task.wait(0.5) do DoAutoGenerator() end end)()
+coroutine.wrap(function() while task.wait(0.3) do DoAutoKill() end end)()
+
+-- No Cooldown
+RunService.Heartbeat:Connect(function()
+    if getgenv().VD.Killer.NoCooldown and LocalPlayer.Character then
+        for _, obj in pairs(LocalPlayer.Character:GetDescendants()) do
+            if obj:IsA("NumberValue") and obj.Name:lower():find("cooldown") then
+                obj.Value = 0
+            end
+        end
     end
 end)
 
--- 10. ANTI AFK
-player.Idled:Connect(function()
-    if Toggles.AntiAFK.Value then
-        VirtualUser:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        VirtualUser:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+-- Walkspeed maintain
+RunService.Heartbeat:Connect(function()
+    if LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            if hum.WalkSpeed ~= getgenv().VD.Movement.Walkspeed then
+                hum.WalkSpeed = getgenv().VD.Movement.Walkspeed
+            end
+            if hum.JumpPower ~= getgenv().VD.Movement.JumpPower then
+                hum.JumpPower = getgenv().VD.Movement.JumpPower
+            end
+        end
     end
 end)
 
--- 11. UPDATE STATISTIK
-local statUpdateConn = RunService.Heartbeat:Connect(function()
-    task.wait(3)
-    if oreCountLabel then
-        oreCountLabel:SetText("Total Ore: " .. stats.ore)
-    end
-    if coinLabel then
-        coinLabel:SetText("Koin: " .. math.floor(stats.coins + stats.ore * 25))
-    end
-    if itemCountLabel then
-        itemCountLabel:SetText("Items: " .. stats.items)
-    end
-    if sessionTimeLabel then
-        local elapsed = math.floor((os.time() - stats.startTime) / 60)
-        sessionTimeLabel:SetText("Sesi: " .. elapsed .. " menit")
+-- NoClip
+RunService.Stepped:Connect(function()
+    if getgenv().VD.Movement.NoClip and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
     end
 end)
 
--- ==================================================
--- FINAL NOTIFICATION
--- ==================================================
-task.wait(1)
-Library:Notify("✅ RYEENZY THE FORGE ULTIMATE v6.0 BERHASIL DIMUAT!", 5)
-Library:Notify("📊 Total 28+ Fitur - Auto Mine, Forge, Kill, Dupe, ESP, Teleport", 4)
+-- Fly Mode
+RunService.Heartbeat:Connect(function()
+    if getgenv().VD.Movement.Fly and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hum and root then
+            hum.PlatformStand = true
+            local moveDir = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                moveDir = moveDir + Camera.CFrame.LookVector * 50
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                moveDir = moveDir - Camera.CFrame.LookVector * 50
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                moveDir = moveDir - Camera.CFrame.RightVector * 50
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                moveDir = moveDir + Camera.CFrame.RightVector * 50
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                moveDir = moveDir + Vector3.new(0, 50, 0)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                moveDir = moveDir - Vector3.new(0, 50, 0)
+            end
+            root.Velocity = moveDir
+        end
+    elseif getgenv().VD.Movement.Fly == false and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = false end
+    end
+end)
 
-if remotes.mine or remotes.forge or remotes.attack then
-    Library:Notify("🔌 Remote Events Terdeteksi - Semua fitur siap!", 3)
-else
-    Library:Notify("⚠️ Fallback Mode Aktif (Click Method) - Tetap Work!", 4)
-end
+-- Teleport
+Mouse.Button1Down:Connect(function()
+    if getgenv().VD.Movement.Teleport and LocalPlayer.Character then
+        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            root.CFrame = CFrame.new(Mouse.Hit.p)
+            Library:Notify("Teleported!")
+        end
+    end
+end)
 
-Library:Notify("🔥 Join 350K+ Users - Script by RYEENZY", 3)
+-- ============================================
+-- SAVE CONFIG & NOTIFICATION
+-- ============================================
+SaveManager:LoadAutoloadConfig()
+
+Library:Notify("✅ VIOLENCE DISTRICT - OBSIDIAN UI")
+Library:Notify("🔹 Tekan RightShift untuk buka menu")
+Library:Notify("🔹 " .. #Players:GetPlayers() .. " players in server")
