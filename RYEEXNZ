@@ -21,7 +21,7 @@ local Camera = Workspace.CurrentCamera
 
 -- Load UI Library (AirHub Style)
 local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Exunys/AirHub-V2/main/src/UI%20Library.lua"))()
-local MainFrame = UI:Load("FISH IT SCRIPT v1.0.0")
+local MainFrame = UI:Load("RYEENZY EXPLOIT [BETA]")
 
 -- Variables
 local Settings = {
