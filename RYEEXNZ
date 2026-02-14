@@ -52,8 +52,8 @@ end
 -- GUI WINDOW UTAMA - 8 TAB FITUR LENGKAP [citation:4][citation:9]
 -- ==================================================
 local Window = Library:CreateWindow({
-    Title = "🔥 RYEENZY THE FORGE ULTIMATE",
-    SubTitle = "v6.0 - 25+ Fitur Lengkap | 350K+ Users [citation:9]",
+    Title = "RYEENZY EXPLOIT",
+    SubTitle = "v 0.1 [BETA] [citation:9]",
     ShowCustomCursor = true,
     NotifySide = "Right",
     Resizable = true,
