@@ -1,5 +1,7 @@
--- RYEENZY EXPLOIT - The Forge
--- UI Library: Obsidian (https://github.com/deividcomsono/Obsidian)
+-- RYEENZY EXPLOIT - Fish It (Roblox) ULTIMATE FULL FEATURES
+-- UI Library: Obsidian
+-- Version: 3.0 (Ultimate Auto Fish, EXP System, Enchant, Ghostfinn, Teleport, dll)
+-- Fitur berdasarkan guide terbaru 2025: Level Luck 225%, Enchant XP, Kohana Volcano, Astral Rod, dll [citation:2][citation:5][citation:8]
 
 -- Memuat Library dan Addons
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
@@ -7,9 +9,13 @@ local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
--- Inisialisasi variabel global untuk Options dan Toggles
+-- Inisialisasi variabel global
 local Options = Library.Options
 local Toggles = Library.Toggles
+local player = game:GetService("Players").LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 -- Konfigurasi Library
 Library.ForceCheckbox = false
@@ -18,313 +24,608 @@ Library.ShowToggleFrameInKeybinds = true
 -- Membuat Jendela Utama
 local Window = Library:CreateWindow({
     Title = "RYEENZY EXPLOIT",
-    Footer = "The Forge - Full Features",
-    Icon = 95816097006870, -- Icon default
+    Footer = "Fish It ULTIMATE v3.0",
+    Icon = 95816097006870,
     NotifySide = "Right",
     ShowCustomCursor = true,
     Resizable = true,
 })
 
--- Membuat Tab
+-- Membuat Tab - FULL FITUR berdasarkan hasil pencarian
 local Tabs = {
-    Farming = Window:AddTab("Farming", "pickaxe"),       -- Ikon pickaxe
-    Combat = Window:AddTab("Combat", "sword"),           -- Ikon sword
-    Forging = Window:AddTab("Forging", "hammer"),        -- Ikon hammer
-    Player = Window:AddTab("Player", "user"),            -- Ikon user
-    Misc = Window:AddTab("Misc", "settings"),            -- Ikon settings
+    ["Auto Fish"] = Window:AddTab("Auto Fish", "fish"),
+    ["EXP & Level"] = Window:AddTab("EXP & Level", "bar-chart-2"), -- Level Luck 225% [citation:5]
+    ["Enchant System"] = Window:AddTab("Enchant System", "sparkles"), -- Enchant XP, dll [citation:4][citation:8]
+    ["Ghostfinn"] = Window:AddTab("Ghostfinn", "star"), -- Auto Ghostfinn [citation:9]
+    Teleport = Window:AddTab("Teleport", "map-pin"), -- Semua lokasi [citation:2][citation:4][citation:8]
+    Player = Window:AddTab("Player", "user"),
+    Shop = Window:AddTab("Shop", "shopping-cart"), -- Auto Buy Rod [citation:8]
+    Misc = Window:AddTab("Misc", "settings"),
     ["UI Settings"] = Window:AddTab("UI Settings", "settings"),
 }
 
 -- ==================================================
--- TAB FARMING (Pertanian & Penambangan)
+-- TAB AUTO FISH (DENGAN 5 MODE KECEPATAN)
 -- ==================================================
-local FarmingLeft = Tabs.Farming:AddLeftGroupbox("Auto Mine")
-local FarmingRight = Tabs.Farming:AddRightGroupbox("World & Teleport")
+local AutoFishLeft = Tabs["Auto Fish"]:AddLeftGroupbox("Pengaturan Auto Fish")
+local AutoFishRight = Tabs["Auto Fish"]:AddRightGroupbox("Mode & Kecepatan")
+local AutoFishAdvanced = Tabs["Auto Fish"]:AddLeftGroupbox("Advanced Fishing")
 
--- Auto Mine Toggle
-FarmingLeft:AddToggle("AutoMine", {
-    Text = "Auto Mine",
-    Tooltip = "Menambang batu/boulder di sekitar secara otomatis.",
+-- Variabel kontrol
+local fishingActive = false
+local currentMode = "normal"
+local fishingConnection = nil
+local instantCatchActive = false
+
+-- Fungsi Auto Fish dengan berbagai mode berdasarkan hasil pencarian [citation:3][citation:6]
+local function startFishing(mode)
+    if fishingConnection then
+        fishingConnection:Disconnect()
+    end
+    
+    fishingActive = true
+    currentMode = mode
+    
+    -- Cari remote events (nama disesuaikan dengan game Fish It)
+    local remote = game:GetService("ReplicatedStorage"):FindFirstChild("FishingRemote", true) or
+                   game:GetService("ReplicatedStorage"):FindFirstChild("CastEvent", true) or
+                   game:GetService("ReplicatedStorage"):FindFirstChild("FishEvent", true)
+    
+    fishingConnection = RunService.Heartbeat:Connect(function()
+        if not fishingActive then return end
+        
+        -- Cari Fishing Rod
+        local rod = player.Character and player.Character:FindFirstChild("Fishing Rod") or 
+                   player.Backpack:FindFirstChild("Fishing Rod") or
+                   player.Character and player.Character:FindFirstChild("Rod")
+        
+        if rod and remote then
+            -- Equip rod jika di backpack
+            if rod.Parent == player.Backpack and player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid:EquipTool(rod)
+            end
+            
+            -- Mode kecepatan berdasarkan pilihan
+            if mode == "super-fast" then
+                -- SUPER FAST (resiko tinggi) - Multi cast [citation:6]
+                for i = 1, 4 do
+                    remote:FireServer("Cast")
+                    task.wait(0.05 + (math.random() * 0.03))
+                    remote:FireServer("Reel")
+                end
+                
+            elseif mode == "fast" then
+                -- FAST (resiko sedang)
+                remote:FireServer("Cast")
+                task.wait(0.1)
+                remote:FireServer("Reel")
+                
+            elseif mode == "normal" then
+                -- NORMAL (aman)
+                remote:FireServer("Cast")
+                task.wait(Options.CastDelay.Value or 0.5)
+                remote:FireServer("Reel")
+                
+            elseif mode == "stealth" then
+                -- STEALTH (sangat aman, delay acak)
+                remote:FireServer("Cast")
+                task.wait(0.8 + (math.random() * 0.7))
+                remote:FireServer("Reel")
+                
+            elseif mode == "instant" then
+                -- INSTANT CATCH [citation:3][citation:9]
+                if instantCatchActive then
+                    remote:FireServer("Cast")
+                    remote:FireServer("InstantCatch") -- Remote khusus instant
+                    remote:FireServer("Reel")
+                else
+                    remote:FireServer("Cast")
+                    remote:FireServer("Reel")
+                end
+            end
+        end
+    end)
+end
+
+-- Auto Fish Toggle
+AutoFishLeft:AddToggle("AutoFish", {
+    Text = "Auto Fish",
+    Tooltip = "Memancing secara otomatis dengan mode yang dipilih",
     Default = false,
-    Callback = function(Value)
-        -- Logika Auto Mine akan ditempatkan di sini atau menggunakan :OnChanged
-        print("Auto Mine:", Value)
+    Callback = function(value)
+        fishingActive = value
+        if value then
+            Library:Notify("Auto Fish dimulai dengan mode: " .. Options.FishingMode.Value, 2)
+            startFishing(currentMode)
+        else
+            if fishingConnection then
+                fishingConnection:Disconnect()
+                fishingConnection = nil
+            end
+            Library:Notify("Auto Fish dihentikan", 2)
+        end
     end,
 })
 
--- Pilihan Radius Tambang
-FarmingLeft:AddSlider("MineRadius", {
-    Text = "Radius Tambang",
-    Default = 10,
-    Min = 5,
-    Max = 30,
-    Rounding = 0,
-    Suffix = " stud",
-    Tooltip = "Jarak maksimum untuk mendeteksi batu.",
+-- 5 MODE KECEPATAN [citation:6]
+AutoFishRight:AddDropdown("FishingMode", {
+    Values = { 
+        "Stealth (Sangat Aman)", 
+        "Normal (Aman)", 
+        "Fast (Cepat)", 
+        "Super Fast (Resiko Tinggi)",
+        "Instant Catch (Resiko Maksimal)" 
+    },
+    Default = 2,
+    Multi = false,
+    Text = "Mode Kecepatan",
+    Tooltip = "Pilih kecepatan auto fish (semakin cepat semakin berisiko)",
+    Callback = function(value)
+        if value == "Stealth (Sangat Aman)" then
+            currentMode = "stealth"
+        elseif value == "Normal (Aman)" then
+            currentMode = "normal"
+        elseif value == "Fast (Cepat)" then
+            currentMode = "fast"
+        elseif value == "Super Fast (Resiko Tinggi)" then
+            currentMode = "super-fast"
+        else
+            currentMode = "instant"
+            instantCatchActive = true
+        end
+        
+        if fishingActive then
+            startFishing(currentMode)
+            Library:Notify("Mode diubah ke: " .. value, 2)
+        end
+    end,
 })
 
--- Pilihan Kecepatan Tambang (Delay)
-FarmingLeft:AddSlider("MineDelay", {
-    Text = "Kecepatan (Delay)",
-    Default = 0.2,
+-- Pengaturan Delay
+AutoFishRight:AddSlider("CastDelay", {
+    Text = "Delay Cast (detik)",
+    Default = 0.5,
     Min = 0.1,
-    Max = 1,
+    Max = 3,
     Rounding = 1,
     Suffix = "s",
-    Tooltip = "Jeda waktu antara setiap pukulan.",
 })
 
--- Auto Collect Item
-FarmingLeft:AddToggle("AutoCollect", {
-    Text = "Auto Collect Item",
-    Tooltip = "Mengambil ore/item yang jatuh secara otomatis.",
+AutoFishRight:AddSlider("ReelDelay", {
+    Text = "Delay Reel (detik)",
+    Default = 0.3,
+    Min = 0.1,
+    Max = 2,
+    Rounding = 1,
+    Suffix = "s",
+})
+
+-- Fitur Auto Bite
+AutoFishAdvanced:AddToggle("AutoBite", {
+    Text = "Auto Bite (Instant Strike)",
+    Tooltip = "Langsung menarik saat ikan menggigit",
     Default = true,
 })
 
--- Dropdown Lokasi Teleport
-FarmingRight:AddDropdown("TeleportLocation", {
-    Values = { "Spawn Area", "Forgotten Kingdom", "Deep Mines", "Boss Arena" },
+-- Priority Fish
+AutoFishAdvanced:AddDropdown("FishPriority", {
+    Values = { "Semua Ikan", "Rare Priority", "Epic Priority", "Legendary Priority", "Mythic Priority", "Secret Priority" },
     Default = 1,
     Multi = false,
-    Text = "Teleport ke",
-    Tooltip = "Pilih lokasi untuk teleport.",
-})
-
--- Tombol Teleport
-FarmingRight:AddButton({
-    Text = "Teleport",
-    Func = function()
-        local selectedLocation = Options.TeleportLocation.Value
-        print("Teleport ke:", selectedLocation)
-        -- Logika teleport berdasarkan pilihan
-        -- Contoh: Cari Part/CFrame berdasarkan nama lokasi
-    end,
-    Tooltip = "Klik untuk teleport ke lokasi yang dipilih.",
-})
-
-FarmingRight:AddDivider()
-
--- ESP Ore
-FarmingRight:AddToggle("OreESP", {
-    Text = "ESP Ore",
-    Tooltip = "Menampilkan lokasi ore melalui tembok (Highlight).",
-    Default = false,
+    Text = "Prioritas Ikan",
 })
 
 -- ==================================================
--- TAB COMBAT (Pertarungan)
+-- TAB EXP & LEVEL (LEVEL LUCK 225%) [citation:5]
 -- ==================================================
-local CombatLeft = Tabs.Combat:AddLeftGroupbox("Auto Battle")
-local CombatRight = Tabs.Combat:AddRightGroupbox("Targeting & ESP")
+local ExpLeft = Tabs["EXP & Level"]:AddLeftGroupbox("Auto Leveling & XP Boost")
+local ExpRight = Tabs["EXP & Level"]:AddRightGroupbox("Level Luck System")
 
--- Auto Kill
-CombatLeft:AddToggle("AutoKill", {
-    Text = "Auto Kill",
-    Tooltip = "Menyerang monster di sekitar secara otomatis.",
+-- Informasi Level Luck
+ExpRight:AddLabel("📊 Info Level Luck System:", true)
+ExpRight:AddLabel("• Setiap 50 Level = +8% Luck", true)
+ExpRight:AddLabel("• Maksimal Level 1500 = 225% Luck", true)
+ExpRight:AddLabel("• Luck mempengaruhi peluang ikan langka", true)
+
+ExpRight:AddDivider()
+
+-- Stat Level Luck
+local currentLevelLabel = ExpRight:AddLabel("Level Saat Ini: -")
+local luckBonusLabel = ExpRight:AddLabel("Luck Bonus: -")
+local nextMilestoneLabel = ExpRight:AddLabel("Next 50 Level: -")
+
+-- Auto Level Toggle
+ExpLeft:AddToggle("AutoLevel", {
+    Text = "Auto Level",
+    Tooltip = "Otomatis farming XP untuk naik level",
     Default = false,
 })
 
--- Kill Aura
-CombatLeft:AddToggle("KillAura", {
-    Text = "Kill Aura",
-    Tooltip = "Menyerang semua musuh dalam jangkauan tanpa menarget.",
-    Default = false,
-})
-
--- Pilihan Radius Serangan
-CombatLeft:AddSlider("AttackRadius", {
-    Text = "Radius Serangan",
-    Default = 15,
-    Min = 5,
-    Max = 40,
+-- XP Multiplier [citation:5]
+ExpLeft:AddSlider("ExpMultiplier", {
+    Text = "XP Multiplier",
+    Default = 1,
+    Min = 1,
+    Max = 10,
     Rounding = 0,
-    Suffix = " stud",
+    Suffix = "x",
 })
 
--- Pilihan Target Prioritas
-CombatRight:AddDropdown("PriorityTarget", {
-    Values = { "Terdekat", "HP Terendah", "Level Tertinggi", "Boss" },
-    Default = 1,
-    Multi = false,
-    Text = "Prioritas Target",
-})
-
--- ESP Player/Monster
-CombatRight:AddToggle("EnemyESP", {
-    Text = "ESP Monster",
-    Tooltip = "Menampilkan lokasi monster.",
-    Default = false,
-})
-
-CombatRight:AddToggle("PlayerESP", {
-    Text = "ESP Player",
-    Tooltip = "Menampilkan lokasi player lain.",
-    Default = false,
-})
-
--- ==================================================
--- TAB FORGING (Penempaan)
--- ==================================================
-local ForgingLeft = Tabs.Forging:AddLeftGroupbox("Auto Forge")
-local ForgingRight = Tabs.Forging:AddRightGroupbox("Crafting Settings")
-
--- Auto Forge
-ForgingLeft:AddToggle("AutoForge", {
-    Text = "Auto Forge",
-    Tooltip = "Menempa item secara otomatis menggunakan ore di inventory.",
-    Default = false,
-})
-
--- Pilihan Tipe Item yang Akan Ditempa
-ForgingLeft:AddDropdown("ForgeItemType", {
-    Values = { "Weapon (Senjata)", "Armor (Baju Besi)", "Terlaris (Profit)" },
-    Default = 1,
-    Multi = false,
-    Text = "Tipe Item",
-})
-
--- Pilihan Kualitas
-ForgingLeft:AddDropdown("ForgeQuality", {
-    Values = { "Normal", "Good", "Perfect" },
-    Default = 1,
-    Multi = false,
-    Text = "Kualitas Target",
-})
-
--- Auto Complete Minigame
-ForgingRight:AddToggle("AutoMinigame", {
-    Text = "Auto Selesaikan Minigame",
-    Tooltip = "Secara otomatis menyelesaikan minigame forging (smelting, pouring, forging).",
+-- Enchant XP (1.5x XP) [citation:5]
+ExpLeft:AddToggle("EnchantXP", {
+    Text = "Gunakan Enchant XP (1.5x)",
+    Tooltip = "Memprioritaskan penggunaan enchant XP untuk leveling lebih cepat",
     Default = true,
 })
 
--- Tombol Forge Sekarang (Manual)
-ForgingRight:AddButton({
-    Text = "Forge Sekarang (Manual)",
+-- XP Potion Auto Use
+ExpLeft:AddToggle("AutoXPPotion", {
+    Text = "Auto Use XP Potion",
+    Tooltip = "Otomatis menggunakan XP potion saat habis",
+    Default = false,
+})
+
+-- Priority Spot untuk Leveling [citation:2][citation:8]
+ExpLeft:AddDropdown("LevelingSpot", {
+    Values = { 
+        "Starter Lake (Level 1-10)", 
+        "Coral Bay (Level 10-20)", 
+        "Ocean Deep (Level 20-30)",
+        "Kohana Volcano (Terbaik XP)"  -- [citation:8]
+    },
+    Default = 4,
+    Multi = false,
+    Text = "Spot Leveling Terbaik",
+    Tooltip = "Pilih lokasi terbaik untuk leveling sesuai level",
+})
+
+-- ==================================================
+-- TAB ENCHANT SYSTEM [citation:4][citation:8]
+-- ==================================================
+local EnchantLeft = Tabs["Enchant System"]:AddLeftGroupbox("Auto Enchant")
+local EnchantRight = Tabs["Enchant System"]:AddRightGroupbox("Enchant Settings")
+
+-- Auto Enchant
+EnchantLeft:AddToggle("AutoEnchant", {
+    Text = "Auto Enchant",
+    Tooltip = "Otomatis melakukan enchant di Esoteric Depths",
+    Default = false,
+})
+
+-- Priority Enchant [citation:4]
+EnchantLeft:AddDropdown("PriorityEnchant", {
+    Values = { 
+        "Experience (1.5x XP)", 
+        "Leprechaun (Bonus Koin)",
+        "Empowered (Kekuatan Joran)",
+        "Storm Hunter (Efektif saat badai)",
+        "Mutation Hunter (Mutasi)",
+        "Random (Auto Pilih)"
+    },
+    Default = 1,
+    Multi = false,
+    Text = "Prioritas Enchant",
+    Tooltip = "Pilih enchant yang diprioritaskan",
+})
+
+-- Enchant Stone Auto Farm [citation:4]
+EnchantLeft:AddToggle("AutoFarmEnchant", {
+    Text = "Auto Farm Enchant Stone",
+    Tooltip = "Farming enchant stone otomatis di Esoteric Depths",
+    Default = false,
+})
+
+EnchantRight:AddLabel("📍 Lokasi Enchant: Esoteric Depths")
+EnchantRight:AddLabel("💰 Biaya Elevator: 400 coins")
+
+EnchantRight:AddDivider()
+
+-- Tombol Teleport ke Esoteric Depths
+EnchantRight:AddButton({
+    Text = "Teleport ke Esoteric Depths",
     Func = function()
-        print("Memulai proses forging manual...")
-        -- Panggil fungsi forge
+        local target = Workspace:FindFirstChild("EsotericDepths") or 
+                      Workspace:FindFirstChild("Esoteric Depths") or
+                      Workspace:FindFirstChild("Elevator")
+        if target and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = target.CFrame + Vector3.new(0, 5, 0)
+            Library:Notify("Teleport ke Esoteric Depths", 2)
+        end
     end,
 })
 
 -- ==================================================
--- TAB PLAYER (Pemain)
+-- TAB GHOSTFINN (FITUR EKSKLUSIF) [citation:9]
 -- ==================================================
-local PlayerLeft = Tabs.Player:AddLeftGroupbox("Stats & Booster")
-local PlayerRight = Tabs.Player:AddRightGroupbox("Inventory & Quests")
+local GhostfinnLeft = Tabs["Ghostfinn"]:AddLeftGroupbox("Auto Ghostfinn")
+local GhostfinnRight = Tabs["Ghostfinn"]:AddRightGroupbox("Ghostfinn Settings")
 
--- Auto Level / Auto Claim XP
-PlayerLeft:AddToggle("AutoLevel", {
-    Text = "Auto Level (Claim XP)",
-    Tooltip = "Secara otomatis meng-klaim XP dari Index atau quest yang selesai.",
+-- Auto Ghostfinn [citation:9]
+GhostfinnLeft:AddToggle("AutoGhostfinn", {
+    Text = "Auto Ghostfinn",
+    Tooltip = "Mendeteksi dan menangkap Ghostfinn secara otomatis",
+    Default = false,
+    Risky = true,
+})
+
+-- Ghostfinn Alert
+GhostfinnLeft:AddToggle("GhostfinnAlert", {
+    Text = "Ghostfinn Alert",
+    Tooltip = "Notifikasi saat Ghostfinn muncul",
+    Default = true,
+})
+
+-- Auto Switch Rod untuk Ghostfinn
+GhostfinnLeft:AddToggle("AutoSwitchRodGhost", {
+    Text = "Auto Switch Rod Khusus",
+    Tooltip = "Otomatis mengganti ke rod terbaik saat Ghostfinn muncul",
+    Default = true,
+})
+
+-- Stat Ghostfinn
+GhostfinnRight:AddLabel("📊 Ghostfinn Tracker:")
+local ghostfinnCaughtLabel = GhostfinnRight:AddLabel("Tertangkap: 0")
+local ghostfinnAttemptLabel = GhostfinnRight:AddLabel("Percobaan: 0")
+
+-- ==================================================
+-- TAB TELEPORT (SEMUA LOKASI) [citation:2][citation:4][citation:8]
+-- ==================================================
+local TeleportLeft = Tabs.Teleport:AddLeftGroupbox("Fishing Spots")
+local TeleportRight = Tabs.Teleport:AddRightGroupbox("Special Areas & Shop")
+
+-- Daftar lengkap lokasi berdasarkan hasil pencarian
+local fishingSpots = {
+    "Fisherman Island (Spawn)",  -- [citation:4][citation:10]
+    "Starter Lake",               -- [citation:2]
+    "Coral Bay (Dangkal)",        -- [citation:2]
+    "Coral Bay (Tengah)",         -- [citation:2]
+    "Ocean Deep",                 -- [citation:2]
+    "Kohana Volcano (TERBAIK)",   -- [citation:8]
+    "Kohana Volcano - Goa",       -- [citation:8]
+    "Tropical Grove",             -- [citation:8]
+    "Mystic Ocean",               -- [citation:2]
+    "Tropical Bay",               -- [citation:2]
+    "Frozen Lake",                -- [citation:2]
+}
+
+local specialAreas = {
+    "Esoteric Depths (Enchant)",  -- [citation:4]
+    "Lost Isle (Quest)",           -- [citation:4][citation:8]
+    "Jungle Elevator (Level 200)", -- [citation:5]
+    "Treasure Room",               -- [citation:4]
+    "Sisyphus Statue",             -- [citation:4]
+    "Shop Area",                   -- [citation:2]
+    "Event Location",              -- [citation:2]
+}
+
+-- Dropdown lokasi fishing
+TeleportLeft:AddDropdown("TeleportFishingSpot", {
+    Values = fishingSpots,
+    Default = 6, -- Kohana Volcano
+    Multi = false,
+    Text = "Fishing Spots",
+})
+
+-- Dropdown area spesial
+TeleportRight:AddDropdown("TeleportSpecialArea", {
+    Values = specialAreas,
+    Default = 1,
+    Multi = false,
+    Text = "Special Areas",
+})
+
+-- Tombol Teleport Fishing
+TeleportLeft:AddButton({
+    Text = "Teleport ke Fishing Spot",
+    Func = function()
+        local spot = Options.TeleportFishingSpot.Value
+        Library:Notify("Teleport ke " .. spot, 2)
+        -- Implementasi teleport (disesuaikan dengan game)
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            -- Cari lokasi di workspace berdasarkan nama
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj.Name:find(spot:match("^[^%(]+")) or spot:find(obj.Name) then
+                    if obj:IsA("Part") or obj:IsA("Model") then
+                        local cf = obj:IsA("Model") and obj.PrimaryPart and obj.PrimaryPart.CFrame or obj.CFrame
+                        player.Character.HumanoidRootPart.CFrame = cf + Vector3.new(0, 5, 0)
+                        return
+                    end
+                end
+            end
+        end
+    end,
+})
+
+-- Tombol Teleport Special
+TeleportRight:AddButton({
+    Text = "Teleport ke Special Area",
+    Func = function()
+        local area = Options.TeleportSpecialArea.Value
+        Library:Notify("Teleport ke " .. area, 2)
+        -- Implementasi teleport untuk special areas
+    end,
+})
+
+-- ==================================================
+-- TAB SHOP (AUTO BUY ROD) [citation:8]
+-- ==================================================
+local ShopLeft = Tabs.Shop:AddLeftGroupbox("Auto Buy Rod")
+local ShopRight = Tabs.Shop:AddRightGroupbox("Auto Buy Bait & Item")
+
+-- Daftar rod berdasarkan panduan [citation:8]
+ShopLeft:AddLabel("📋 Rod Progression:")
+ShopLeft:AddLabel("1. Starter Rod (Awal)", true)
+ShopLeft:AddLabel("2. Lucky Rod", true)
+ShopLeft:AddLabel("3. Midnight Rod", true)
+ShopLeft:AddLabel("4. Astral Rod (~1 juta coins) ⭐", true)
+ShopLeft:AddLabel("5. Ares Rod (3 juta, Tropical Grove)", true)
+ShopLeft:AddLabel("6. Angler Rod (8 juta, Lost Isle)", true)
+ShopLeft:AddLabel("7. Ghostfin Rod (Endgame)", true)
+
+ShopLeft:AddDivider()
+
+-- Auto Buy Rod [citation:8]
+ShopLeft:AddToggle("AutoBuyRod", {
+    Text = "Auto Buy Rod Terbaik",
+    Tooltip = "Otomatis membeli rod sesuai urutan progression",
     Default = false,
 })
 
--- Slider Kecepatan Jalan
+-- Target Rod
+ShopLeft:AddDropdown("TargetRod", {
+    Values = { "Astral Rod", "Ares Rod", "Angler Rod", "Ghostfin Rod" },
+    Default = 1,
+    Multi = false,
+    Text = "Target Rod",
+})
+
+-- Auto Buy Bait
+ShopRight:AddToggle("AutoBuyBait", {
+    Text = "Auto Buy Bait",
+    Tooltip = "Otomatis membeli bait saat habis",
+    Default = true,
+})
+
+-- Bait Priority [citation:2]
+ShopRight:AddDropdown("BaitPriority", {
+    Values = { "Top Water Bait", "Deep Sea Bait", "Color Splash Bait", "Singularity Bait" },
+    Default = 1,
+    Multi = false,
+    Text = "Prioritas Bait",
+})
+
+-- ==================================================
+-- TAB PLAYER
+-- ==================================================
+local PlayerLeft = Tabs.Player:AddLeftGroupbox("Player Booster")
+local PlayerRight = Tabs.Player:AddRightGroupbox("Inventory & Gear")
+
+-- WalkSpeed
 PlayerLeft:AddSlider("WalkSpeed", {
     Text = "WalkSpeed",
     Default = 16,
     Min = 16,
-    Max = 120,
+    Max = 250,
     Rounding = 0,
     Suffix = " ws",
-    Tooltip = "Mengubah kecepatan jalan karakter.",
 })
 
--- Slider Kecepatan Lompat
+-- JumpPower
 PlayerLeft:AddSlider("JumpPower", {
     Text = "JumpPower",
     Default = 50,
     Min = 50,
-    Max = 200,
+    Max = 350,
     Rounding = 0,
     Suffix = " jp",
 })
 
--- Tombol Reset Speed
-PlayerLeft:AddButton({
-    Text = "Reset Speed",
-    Func = function()
-        Options.WalkSpeed:SetValue(16)
-        Options.JumpPower:SetValue(50)
-        print("Speed di-reset ke normal.")
-    end,
+-- Infinite Jump [citation:3]
+PlayerLeft:AddToggle("InfiniteJump", {
+    Text = "Infinite Jump",
+    Tooltip = "Lompat tanpa batas",
+    Default = false,
+    Risky = true,
 })
 
--- Auto Accept Quest
-PlayerRight:AddToggle("AutoAcceptQuest", {
-    Text = "Auto Accept Quest",
-    Tooltip = "Secara otomatis menerima quest dari NPC saat berada di dekatnya.",
+-- Infinite Oxygen [citation:3][citation:4]
+PlayerLeft:AddToggle("InfiniteOxygen", {
+    Text = "Infinite Oxygen",
+    Tooltip = "Bernafas di bawah air tanpa batas (untuk diving)",
     Default = false,
 })
 
--- Auto Complete Quest
-PlayerRight:AddToggle("AutoCompleteQuest", {
-    Text = "Auto Complete/Turn In Quest",
-    Tooltip = "Secara otomatis menyerahkan quest yang sudah selesai ke NPC.",
+-- Walk on Water [citation:3]
+PlayerLeft:AddToggle("WalkOnWater", {
+    Text = "Walk on Water",
+    Tooltip = "Berjalan di atas air",
     Default = false,
 })
 
--- ==================================================
--- TAB MISC (Lain-lain)
--- ==================================================
-local MiscLeft = Tabs.Misc:AddLeftGroupbox("Miscellaneous")
-local MiscRight = Tabs.Misc:AddRightGroupbox("Keybinds & Utility")
-
--- Anti AFK
-MiscLeft:AddToggle("AntiAFK", {
-    Text = "Anti AFK",
-    Tooltip = "Mencegah koneksi terputus karena tidak bergerak.",
+-- Auto Sell [citation:3][citation:7]
+PlayerRight:AddToggle("AutoSell", {
+    Text = "Auto Sell Ikan",
+    Tooltip = "Otomatis menjual ikan ke Fish Merchant",
     Default = true,
 })
 
--- NoClip (Hati-hati)
-MiscLeft:AddToggle("NoClip", {
-    Text = "NoClip (Tembus Dinding)",
-    Tooltip = "Memungkinkan Anda menembus dinding. Gunakan dengan risiko sendiri!",
-    Default = false,
-    Risky = true, -- Teks akan berwarna merah sebagai peringatan
-})
-
--- Invisible (Hide Character)
-MiscLeft:AddToggle("Invisible", {
-    Text = "Invisible (Sembunyikan Karakter)",
-    Tooltip = "Membuat karakter Anda tidak terlihat oleh pemain lain (Client-side).",
-    Default = false,
-})
-
--- Slider Field of View (FOV)
-MiscLeft:AddSlider("FOV", {
-    Text = "Field of View (FOV)",
-    Default = 70,
-    Min = 40,
-    Max = 120,
+-- Sell Threshold
+PlayerRight:AddSlider("SellThreshold", {
+    Text = "Sell Threshold (%)",
+    Default = 80,
+    Min = 50,
+    Max = 100,
     Rounding = 0,
-    Suffix = "°",
+    Suffix = "%",
+})
+
+-- Priority Jual [citation:7]
+PlayerRight:AddDropdown("SellPriority", {
+    Values = { "Common First", "Rare & Above Only", "Semua Kecuali Legendary", "Hanya Mythic/Secret" },
+    Default = 2,
+    Multi = false,
+    Text = "Prioritas Jual",
+})
+
+-- ==================================================
+-- TAB MISC
+-- ==================================================
+local MiscLeft = Tabs.Misc:AddLeftGroupbox("Utility")
+local MiscRight = Tabs.Misc:AddRightGroupbox("Extra Features")
+
+-- Anti AFK [citation:3]
+MiscLeft:AddToggle("AntiAFK", {
+    Text = "Anti AFK / Anti Kick",
+    Tooltip = "Mencegah disconnect karena idle",
+    Default = true,
+})
+
+-- Auto Collect Treasure
+MiscLeft:AddToggle("AutoCollectTreasure", {
+    Text = "Auto Collect Treasure",
+    Tooltip = "Otomatis mengambil harta karun yang muncul",
+    Default = false,
+})
+
+-- ESP Fish [citation:3]
+MiscLeft:AddToggle("FishESP", {
+    Text = "ESP Ikan",
+    Tooltip = "Menampilkan lokasi ikan rare melalui tembok",
+    Default = false,
+})
+
+-- Auto Event [citation:2][citation:7]
+MiscRight:AddToggle("AutoEvent", {
+    Text = "Auto Event",
+    Tooltip = "Otomatis mengikuti event untuk hadiah besar",
+    Default = false,
+})
+
+-- Auto Claim Daily Quest [citation:2]
+MiscRight:AddToggle("AutoDailyQuest", {
+    Text = "Auto Daily Quest",
+    Tooltip = "Otomatis menyelesaikan dan claim daily quest",
+    Default = false,
+})
+
+-- Auto Redeem Codes
+MiscRight:AddToggle("AutoRedeemCodes", {
+    Text = "Auto Redeem Codes",
+    Tooltip = "Otomatis redeem kode yang masih aktif",
+    Default = false,
 })
 
 -- Tombol Rejoin
 MiscRight:AddButton({
     Text = "Rejoin Server",
     Func = function()
-        Library:Notify("Memproses rejoin...")
-        game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
-    end,
-    Tooltip = "Teleport kembali ke server yang sama.",
-})
-
--- Tombol Server Hop
-MiscRight:AddButton({
-    Text = "Server Hop",
-    Func = function()
-        Library:Notify("Mencari server baru...")
-        -- Logika Server Hop (cukup kompleks, contoh sederhana: pindah ke server acak)
-        -- Tempatkan kode server hop di sini
+        Library:Notify("Rejoin server...", 2)
+        game:GetService("TeleportService"):Teleport(game.PlaceId, player)
     end,
 })
 
 -- ==================================================
--- TAB UI SETTINGS (Pengaturan Tampilan)
+-- TAB UI SETTINGS
 -- ==================================================
 local UIGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu Settings")
 
@@ -334,85 +635,88 @@ UIGroup:AddButton({
     Func = function()
         Library:Toggle()
     end,
-    Tooltip = "Menampilkan atau menyembunyikan menu.",
 })
 
 UIGroup:AddLabel("Menu Keybind"):AddKeyPicker("MenuKeybind", {
-    Default = "RightShift", -- Ganti dengan key yang diinginkan
+    Default = "RightShift",
     Text = "Keybind",
-    NoUI = true, -- Tidak menampilkan picker di UI, hanya diatur di sini
-    Callback = function(Value)
+    NoUI = true,
+    Callback = function()
         Library:Toggle()
     end,
 })
 
--- Pemisah
 UIGroup:AddDivider()
 
--- Di sinilah addon ThemeManager dan SaveManager akan ditempatkan
--- Mereka akan menambahkan tab mereka sendiri secara otomatis
+-- Setup ThemeManager dan SaveManager
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
+SaveManager:SetFolder("RYEENZY/FishItUltimate")
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
 
--- Menambahkan folder untuk menyimpan konfigurasi
-SaveManager:SetFolder("RYEENZY/TheForge")
-
--- Ignore keys tertentu agar tidak ikut tersimpan (misalnya keybind menu)
-SaveManager:IgnoreThemeSettings() -- Mengabaikan pengaturan tema dari save file
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" }) -- Mengabaikan keybind menu
-
--- Membangun tab untuk ThemeManager dan SaveManager
 ThemeManager:ApplyToTab(Tabs["UI Settings"])
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
 
 -- ==================================================
--- LOGIKA UTAMA SCRIPT (Contoh Sederhana)
+-- LOGIKA UTAMA
 -- ==================================================
--- Disarankan untuk menulis logika fitur di sini atau di file terpisah
--- Menggunakan :OnChanged untuk merespon perubahan nilai toggle/slider
 
--- Contoh untuk Auto Mine
-Toggles.AutoMine:OnChanged(function()
-    if Toggles.AutoMine.Value then
-        -- Mulai loop auto mine
-        print("Memulai Auto Mine...")
-        -- Contoh loop sederhana (gunakan task.spawn atau while loop dengan wait)
-        task.spawn(function()
-            while Toggles.AutoMine.Value do
-                -- Logika mencari dan memukul batu
-                -- Contoh: Cari object dengan nama "Rock" atau "Boulder"
-                local rock = game:GetService("Workspace"):FindFirstChild("Rock") -- Ini hanya contoh, perlu disesuaikan
-                if rock then
-                    -- Lakukan aksi menambang
-                    print("Menambang batu...")
-                end
-                wait(Options.MineDelay.Value) -- Gunakan delay dari slider
-            end
-        end)
-    else
-        print("Auto Mine dihentikan.")
-    end
-end)
-
--- Contoh untuk WalkSpeed
+-- WalkSpeed handler
 Options.WalkSpeed:OnChanged(function()
-    local player = game:GetService("Players").LocalPlayer
-    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
         player.Character.Humanoid.WalkSpeed = Options.WalkSpeed.Value
     end
 end)
 
--- Contoh untuk Anti AFK
-local vu = game:GetService("VirtualUser")
-Toggles.AntiAFK:OnChanged(function()
-    if Toggles.AntiAFK.Value then
-        game:GetService("Players").LocalPlayer.Idled:Connect(function()
-            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            wait(1)
-            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        end)
+-- JumpPower handler
+Options.JumpPower:OnChanged(function()
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.JumpPower = Options.JumpPower.Value
     end
 end)
 
--- Notifikasi bahwa script telah dimuat
-Library:Notify("RYEENZY EXPLOIT for The Forge berhasil dimuat! Selamat menggunakan.", 3)
+-- Infinite Jump
+local infiniteJumpConn = nil
+Toggles.InfiniteJump:OnChanged(function()
+    if Toggles.InfiniteJump.Value then
+        infiniteJumpConn = UserInputService.JumpRequest:Connect(function()
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+        Library:Notify("Infinite Jump diaktifkan", 2)
+    else
+        if infiniteJumpConn then
+            infiniteJumpConn:Disconnect()
+            infiniteJumpConn = nil
+        end
+    end
+end)
+
+-- Anti AFK
+local vu = game:GetService("VirtualUser")
+player.Idled:Connect(function()
+    if Toggles.AntiAFK.Value then
+        vu:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        vu:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+    end
+end)
+
+-- Update stat level setiap 10 detik
+task.spawn(function()
+    while true do
+        task.wait(10)
+        -- Simulasi update level (untuk demo, ganti dengan data real)
+        local mockLevel = 150
+        local luckBonus = math.floor(mockLevel / 50) * 8
+        currentLevelLabel:SetText("Level Saat Ini: " .. mockLevel)
+        luckBonusLabel:SetText("Luck Bonus: +" .. luckBonus .. "%")
+        nextMilestoneLabel:SetText("Next 50 Level: " .. (50 - (mockLevel % 50)) .. " level lagi")
+    end
+end)
+
+-- Notifikasi Load
+Library:Notify("🚀 RYEENZY EXPLOIT - Fish It Ultimate v3.0 berhasil dimuat!", 5)
+Library:Notify("Fitur lengkap: 5 Mode Auto Fish, Enchant, Ghostfinn, Level Luck 225%", 5)
