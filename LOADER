@@ -1,27 +1,26 @@
--- Loader untuk RYEEXNZ
--- Ganti URL di bawah dengan URL repository Anda
+-- Loader untuk THE FORGE SCRIPT
 local scriptURL = "https://raw.githubusercontent.com/xiuynghao-tech/RYEEXNZ-/refs/heads/main/RYEEXNZ"
 
-local function loadRYEEXNZ()
+local function loadScript()
     local success, result = pcall(function()
         return game:HttpGet(scriptURL)
     end)
-    
+
     if success and result then
         local loadSuccess, scriptError = pcall(loadstring, result)
         if loadSuccess and scriptError then
             scriptError()
             game.StarterGui:SetCore("SendNotification", {
-                Title = "RYEEXNZ",
+                Title = "THE FORGE SCRIPT",
                 Text = "Loaded successfully!",
                 Duration = 3
             })
         else
-            warn("RYEEXNZ Load Error: " .. tostring(scriptError))
+            warn("Load Error: " .. tostring(scriptError))
         end
     else
-        warn("RYEEXNZ Fetch Error: " .. tostring(result))
+        warn("Fetch Error: " .. tostring(result))
     end
 end
 
-loadRYEEXNZ()
+loadScript()
