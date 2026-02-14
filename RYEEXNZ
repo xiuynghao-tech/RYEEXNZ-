@@ -1,454 +1,292 @@
---[[ 
-    THE FORGE SCRIPT - Rayfield UI Version
-    Game: The Forge [BETA]
+--[[
+    FISH IT SCRIPT - AirHub V2 Style
+    Made for Fish It / Fishing Simulator
     Version: 1.0.0
-    Fitur: Auto Mine, Auto Forge, Auto Combat, ESP, Teleport, dll
     Telegram: t.me/Swill_Way
 ]]
 
--- Load Rayfield UI
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
--- Create Window
-local Window = Rayfield:CreateWindow({
-    Name = "🔨 THE FORGE SCRIPT v1.0.0",
-    LoadingTitle = "Loading The Forge Script...",
-    LoadingSubtitle = "by RYEEXNZ",
-    Theme = "Default",
-    ToggleUIKeybind = "F4",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "TheForgeConfig",
-        FileName = "TheForge"
-    }
-})
+-- Load Check
+if FishItV2Loaded then return end
+getgenv().FishItV2Loaded = true
 
 -- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
-local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local Camera = Workspace.CurrentCamera
 
--- Variabel Global
-local autoMine = false
-local autoForge = false
-local autoCombat = false
-local oreESP = false
-local playerESP = false
-local autoSell = false
-local autoPotion = false
-local selectedOre = "All Ores"
-local selectedMob = "All Mobs"
+-- Load UI Library (AirHub Style)
+local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Exunys/AirHub-V2/main/src/UI%20Library.lua"))()
+local MainFrame = UI:Load("FISH IT SCRIPT v1.0.0")
 
--- =============================================
--- FUNGSI UTAMA THE FORGE
--- =============================================
-
--- Fungsi mendapatkan ore terdekat
-local function getNearestOre()
-    local nearest = nil
-    local shortestDistance = math.huge
-    
-    for _, v in pairs(Workspace:GetDescendants()) do
-        if v:IsA("BasePart") and (v.Name:lower():find("ore") or v.Name:lower():find("rock") or v.Name:lower():find("stone")) then
-            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - v.Position).Magnitude
-            if distance < shortestDistance then
-                shortestDistance = distance
-                nearest = v
-            end
-        end
-    end
-    return nearest
-end
-
--- Fungsi mendapatkan mob terdekat
-local function getNearestMob()
-    local nearest = nil
-    local shortestDistance = math.huge
-    
-    for _, v in pairs(Workspace:GetDescendants()) do
-        if v:IsA("Model") and (v.Name:lower():find("zombie") or v.Name:lower():find("skeleton") or v.Name:lower():find("enemy") or v.Name:lower():find("mob")) then
-            if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
-                local distance = (LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    nearest = v
-                end
-            end
-        end
-    end
-    return nearest
-end
-
--- Auto Mine Loop
-local function startAutoMine()
-    spawn(function()
-        while autoMine do
-            wait(0.5)
-            local ore = getNearestOre()
-            if ore and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                -- Move to ore
-                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(ore.Position.X, ore.Position.Y + 3, ore.Position.Z)
-                wait(0.3)
-                
-                -- Simulate mining (click)
-                virtualInput:SendMouseButtonEvent(ore.Position.X, ore.Position.Y, 0, true)
-                wait(0.1)
-                virtualInput:SendMouseButtonEvent(ore.Position.X, ore.Position.Y, 0, false)
-            end
-        end
-    end)
-end
-
--- Auto Combat Loop
-local function startAutoCombat()
-    spawn(function()
-        while autoCombat do
-            wait(0.3)
-            local mob = getNearestMob()
-            if mob and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                -- Move to mob
-                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mob.HumanoidRootPart.Position.X, mob.HumanoidRootPart.Position.Y + 2, mob.HumanoidRootPart.Position.Z)
-                wait(0.2)
-                
-                -- Attack
-                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true)
-                wait(0.1)
-                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, false)
-            end
-        end
-    end)
-end
-
--- =============================================
--- AUTO FARM TAB
--- =============================================
-local FarmTab = Window:CreateTab("Auto Farm", "rbxassetid://4483345998")
-
--- Mining Section
-local MiningSection = FarmTab:CreateSection("Mining")
-
-FarmTab:CreateToggle({
-    Name = "Auto Mine",
-    CurrentValue = false,
-    Flag = "AutoMine",
-    Callback = function(Value)
-        autoMine = Value
-        if autoMine then
-            startAutoMine()
-            Rayfield:Notify("Auto Mine Started")
-        end
-    end
-})
-
-FarmTab:CreateDropdown({
-    Name = "Select Ore Type",
-    Options = {"All Ores", "Coal", "Iron", "Gold", "Diamond", "Mithril"},
-    CurrentOption = "All Ores",
-    Flag = "OreType",
-    Callback = function(Option)
-        selectedOre = Option
-    end
-})
-
-FarmTab:CreateSlider({
-    Name = "Mining Range",
-    Range = {10, 100},
-    Increment = 5,
-    Suffix = "Studs",
-    CurrentValue = 30,
-    Flag = "MiningRange",
-})
-
--- Forging Section
-local ForgingSection = FarmTab:CreateSection("Forging")
-
-FarmTab:CreateToggle({
-    Name = "Auto Forge",
-    CurrentValue = false,
-    Flag = "AutoForge",
-    Callback = function(Value)
-        autoForge = Value
-        Rayfield:Notify("Auto Forge " .. (Value and "Started" or "Stopped"))
-    end
-})
-
-FarmTab:CreateToggle({
-    Name = "Auto Melt",
-    CurrentValue = false,
-    Flag = "AutoMelt",
-})
-
-FarmTab:CreateToggle({
-    Name = "Auto Hammer",
-    CurrentValue = false,
-    Flag = "AutoHammer",
-})
-
-FarmTab:CreateToggle({
-    Name = "Auto Mold",
-    CurrentValue = false,
-    Flag = "AutoMold",
-})
-
--- Combat Section
-local CombatSection = FarmTab:CreateSection("Combat")
-
-FarmTab:CreateToggle({
-    Name = "Auto Kill Mobs",
-    CurrentValue = false,
-    Flag = "AutoCombat",
-    Callback = function(Value)
-        autoCombat = Value
-        if autoCombat then
-            startAutoCombat()
-            Rayfield:Notify("Auto Combat Started")
-        end
-    end
-})
-
-FarmTab:CreateDropdown({
-    Name = "Target Mobs",
-    Options = {"All Mobs", "Zombies", "Skeletons", "Bosses"},
-    CurrentOption = "All Mobs",
-    Flag = "MobTarget",
-    Callback = function(Option)
-        selectedMob = Option
-    end
-})
-
-FarmTab:CreateToggle({
-    Name = "Auto Parry",
-    CurrentValue = false,
-    Flag = "AutoParry",
-})
-
--- =============================================
--- ESP TAB
--- =============================================
-local ESPTab = Window:CreateTab("ESP", "rbxassetid://4483345998")
-
--- Ore ESP Section
-local OreESPSection = ESPTab:CreateSection("Ore ESP")
-
-ESPTab:CreateToggle({
-    Name = "Ore ESP",
-    CurrentValue = false,
-    Flag = "OreESP",
-    Callback = function(Value)
-        oreESP = Value
-        if oreESP then
-            spawn(function()
-                while oreESP do
-                    wait(1)
-                    for _, v in pairs(Workspace:GetDescendants()) do
-                        if v:IsA("BasePart") and (v.Name:lower():find("ore") or v.Name:lower():find("rock")) then
-                            if not v:FindFirstChild("OreESP_Highlight") then
-                                local highlight = Instance.new("Highlight")
-                                highlight.Name = "OreESP_Highlight"
-                                highlight.Parent = v
-                                highlight.FillColor = Color3.fromRGB(0, 255, 255)
-                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                                highlight.FillTransparency = 0.3
-                            end
-                        end
-                    end
-                end
-            end)
-        else
-            for _, v in pairs(Workspace:GetDescendants()) do
-                if v:FindFirstChild("OreESP_Highlight") then
-                    v.OreESP_Highlight:Destroy()
-                end
-            end
-        end
-    end
-})
-
-ESPTab:CreateColorpicker({
-    Name = "Ore ESP Color",
-    CurrentValue = Color3.fromRGB(0, 255, 255),
-    Flag = "OreESPColor",
-})
-
--- Mob ESP Section
-local MobESPSection = ESPTab:CreateSection("Mob ESP")
-
-ESPTab:CreateToggle({
-    Name = "Mob ESP",
-    CurrentValue = false,
-    Flag = "MobESP",
-    Callback = function(Value)
-        if Value then
-            for _, v in pairs(Workspace:GetDescendants()) do
-                if v:IsA("Model") and (v.Name:lower():find("zombie") or v.Name:lower():find("skeleton")) then
-                    if not v:FindFirstChild("MobESP_Highlight") then
-                        local highlight = Instance.new("Highlight")
-                        highlight.Name = "MobESP_Highlight"
-                        highlight.Parent = v
-                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                        highlight.FillTransparency = 0.3
-                    end
-                end
-            end
-        else
-            for _, v in pairs(Workspace:GetDescendants()) do
-                if v:FindFirstChild("MobESP_Highlight") then
-                    v.MobESP_Highlight:Destroy()
-                end
-            end
-        end
-    end
-})
-
--- Player ESP Section
-local PlayerESPSection = ESPTab:CreateSection("Player ESP")
-
-ESPTab:CreateToggle({
-    Name = "Player ESP",
-    CurrentValue = false,
-    Flag = "PlayerESP",
-    Callback = function(Value)
-        if Value then
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    if not player.Character:FindFirstChild("PlayerESP_Highlight") then
-                        local highlight = Instance.new("Highlight")
-                        highlight.Name = "PlayerESP_Highlight"
-                        highlight.Parent = player.Character
-                        highlight.FillColor = Color3.fromRGB(255, 255, 0)
-                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                        highlight.FillTransparency = 0.5
-                    end
-                end
-            end
-        else
-            for _, player in pairs(Players:GetPlayers()) do
-                if player.Character and player.Character:FindFirstChild("PlayerESP_Highlight") then
-                    player.Character.PlayerESP_Highlight:Destroy()
-                end
-            end
-        end
-    end
-})
-
--- =============================================
--- TELEPORT TAB
--- =============================================
-local TeleportTab = Window:CreateTab("Teleport", "rbxassetid://4483345998")
-
--- Locations Section
-local LocationsSection = TeleportTab:CreateSection("Locations")
-
-local locations = {
-    ["Spawn"] = CFrame.new(0, 50, 0),
-    ["Mines"] = CFrame.new(100, 20, 50),
-    ["Forge"] = CFrame.new(-50, 20, 100),
-    ["Shop"] = CFrame.new(200, 20, -50),
-    ["Arena"] = CFrame.new(-150, 30, -100)
+-- Variables
+local Settings = {
+    AutoFishing = false,
+    AutoCast = true,
+    AutoReel = true,
+    InstantCatch = false,
+    FishESP = false,
+    PlayerESP = false,
+    ESPColor = Color3.fromRGB(0, 255, 255),
+    ESPTransparency = 0.5,
+    WalkSpeed = 16,
+    JumpPower = 50,
+    NoClip = false,
+    AntiAFK = true,
+    SelectedRod = "Auto",
+    SelectedBait = "None"
 }
 
-local locationNames = {}
-for name, _ in pairs(locations) do
-    table.insert(locationNames, name)
+local ESP_Highlights = {}
+local ESP_Names = {}
+
+-- =============================================
+-- FUNGSI UTAMA
+-- =============================================
+
+-- Fungsi mendapatkan rod
+local function getRod()
+    if LocalPlayer.Character then
+        for _, v in pairs(LocalPlayer.Character:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:lower():find("rod") or v.Name:lower():find("pole")) then
+                return v
+            end
+        end
+    end
+    for _, v in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if v:IsA("Tool") and (v.Name:lower():find("rod") or v.Name:lower():find("pole")) then
+            return v
+        end
+    end
+    return nil
 end
 
-TeleportTab:CreateDropdown({
-    Name = "Select Location",
-    Options = locationNames,
-    CurrentOption = "Spawn",
-    Flag = "SelectedLocation",
-    Callback = function(Option)
-        _G.SelectedLoc = Option
-    end
-})
-
-TeleportTab:CreateButton({
-    Name = "Teleport to Selected",
-    Callback = function()
-        if _G.SelectedLoc and locations[_G.SelectedLoc] and LocalPlayer.Character then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = locations[_G.SelectedLoc]
-            Rayfield:Notify("Teleported to " .. _G.SelectedLoc)
+-- Fungsi cast
+local function castLine()
+    local rod = getRod()
+    if rod then
+        local castEvent = rod:FindFirstChild("Cast") or rod:FindFirstChild("Fish")
+        if castEvent then
+            castEvent:FireServer()
+            return true
         end
     end
-})
+    return false
+end
 
--- Click Teleport Section
-local ClickTPSection = TeleportTab:CreateSection("Click Teleport")
+-- Fungsi reel
+local function reelIn()
+    local rod = getRod()
+    if rod then
+        local reelEvent = rod:FindFirstChild("Reel") or rod:FindFirstChild("Pull")
+        if reelEvent then
+            reelEvent:FireServer()
+            return true
+        end
+    end
+    return false
+end
 
-TeleportTab:CreateToggle({
-    Name = "Click Teleport",
-    CurrentValue = false,
-    Flag = "ClickTP",
-    Callback = function(Value)
-        _G.ClickTP = Value
-        if _G.ClickTP then
-            Mouse.Button1Down:Connect(function()
-                if _G.ClickTP and LocalPlayer.Character then
-                    local target = Mouse.Hit
-                    if target then
-                        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(target.X, target.Y + 3, target.Z)
-                    end
+-- Auto Fishing Loop
+local function startAutoFishing()
+    spawn(function()
+        while Settings.AutoFishing do
+            wait(0.3)
+            
+            -- Equip rod
+            local rod = getRod()
+            if not rod or rod.Parent ~= LocalPlayer.Character then
+                rod = getRod()
+                if rod then
+                    LocalPlayer.Character.Humanoid:EquipTool(rod)
                 end
-            end)
+                wait(0.5)
+            end
+            
+            if Settings.AutoCast then
+                castLine()
+                wait(1.5)
+            end
+            
+            if Settings.AutoReel then
+                reelIn()
+                if Settings.InstantCatch then
+                    wait(0.1)
+                    reelIn()
+                end
+                wait(1)
+            end
+        end
+    end)
+end
+
+-- Fungsi update ESP
+local function updateESP()
+    if Settings.FishESP then
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if v:IsA("Model") and (v.Name:lower():find("fish") or v.Name:lower():find("salmon")) then
+                if not v:FindFirstChild("FishESP") then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "FishESP"
+                    highlight.Parent = v
+                    highlight.FillColor = Settings.ESPColor
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.FillTransparency = Settings.ESPTransparency
+                    table.insert(ESP_Highlights, highlight)
+                end
+            end
+        end
+    end
+end
+
+-- =============================================
+-- TAB GENERAL (KIRI)
+-- =============================================
+local General, GeneralSignal = MainFrame:Tab("General")
+
+-- Auto Fishing Section
+local AutoFishSection = General:Section({
+    Name = "Auto Fishing Settings",
+    Side = "Left"
+})
+
+AutoFishSection:Toggle({
+    Name = "Auto Fishing",
+    Flag = "AutoFishing",
+    Default = Settings.AutoFishing,
+    Callback = function(Value)
+        Settings.AutoFishing = Value
+        if Value then
+            startAutoFishing()
         end
     end
 })
 
--- =============================================
--- PLAYER TAB
--- =============================================
-local PlayerTab = Window:CreateTab("Player", "rbxassetid://4483345998")
-
--- Stats Section
-local StatsSection = PlayerTab:CreateSection("Stats")
-
-PlayerTab:CreateSlider({
-    Name = "WalkSpeed",
-    Range = {16, 250},
-    Increment = 1,
-    Suffix = "Speed",
-    CurrentValue = 16,
-    Flag = "WalkSpeed",
+AutoFishSection:Toggle({
+    Name = "Auto Cast",
+    Flag = "AutoCast",
+    Default = Settings.AutoCast,
     Callback = function(Value)
+        Settings.AutoCast = Value
+    end
+})
+
+AutoFishSection:Toggle({
+    Name = "Auto Reel",
+    Flag = "AutoReel",
+    Default = Settings.AutoReel,
+    Callback = function(Value)
+        Settings.AutoReel = Value
+    end
+})
+
+AutoFishSection:Toggle({
+    Name = "Instant Catch",
+    Flag = "InstantCatch",
+    Default = Settings.InstantCatch,
+    Callback = function(Value)
+        Settings.InstantCatch = Value
+    end
+})
+
+-- Equipment Section
+local EquipmentSection = General:Section({
+    Name = "Equipment",
+    Side = "Left"
+})
+
+EquipmentSection:Dropdown({
+    Name = "Select Rod",
+    Flag = "SelectedRod",
+    Content = {"Auto", "Basic Rod", "Fiberglass Rod", "Carbon Rod", "Titanium Rod"},
+    Default = Settings.SelectedRod,
+    Callback = function(Value)
+        Settings.SelectedRod = Value
+    end
+})
+
+EquipmentSection:Dropdown({
+    Name = "Select Bait",
+    Flag = "SelectedBait",
+    Content = {"None", "Worm", "Minnow", "Shrimp", "Squid", "Golden Bait"},
+    Default = Settings.SelectedBait,
+    Callback = function(Value)
+        Settings.SelectedBait = Value
+    end
+})
+
+-- Manual Controls Section
+local ManualSection = General:Section({
+    Name = "Manual Controls",
+    Side = "Left"
+})
+
+ManualSection:Button({
+    Name = "Cast Line",
+    Callback = function()
+        castLine()
+    end
+})
+
+ManualSection:Button({
+    Name = "Reel In",
+    Callback = function()
+        reelIn()
+    end
+})
+
+-- =============================================
+-- TAB PLAYER (KANAN)
+-- =============================================
+local PlayerTab = MainFrame:Tab("Player")
+
+-- Movement Section
+local MovementSection = PlayerTab:Section({
+    Name = "Movement",
+    Side = "Left"
+})
+
+MovementSection:Slider({
+    Name = "Walk Speed",
+    Flag = "WalkSpeed",
+    Default = Settings.WalkSpeed,
+    Min = 16,
+    Max = 250,
+    Callback = function(Value)
+        Settings.WalkSpeed = Value
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.WalkSpeed = Value
         end
     end
 })
 
-PlayerTab:CreateSlider({
-    Name = "JumpPower",
-    Range = {50, 250},
-    Increment = 1,
-    Suffix = "Power",
-    CurrentValue = 50,
+MovementSection:Slider({
+    Name = "Jump Power",
     Flag = "JumpPower",
+    Default = Settings.JumpPower,
+    Min = 50,
+    Max = 250,
     Callback = function(Value)
+        Settings.JumpPower = Value
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.JumpPower = Value
         end
     end
 })
 
--- Utility Section
-local UtilitySection = PlayerTab:CreateSection("Utility")
-
-PlayerTab:CreateToggle({
-    Name = "NoClip",
-    CurrentValue = false,
+MovementSection:Toggle({
+    Name = "No Clip",
     Flag = "NoClip",
+    Default = Settings.NoClip,
     Callback = function(Value)
-        _G.NoClip = Value
-        if _G.NoClip then
+        Settings.NoClip = Value
+        if Value then
             RunService.Stepped:Connect(function()
-                if _G.NoClip and LocalPlayer.Character then
+                if Settings.NoClip and LocalPlayer.Character then
                     for _, v in pairs(LocalPlayer.Character:GetChildren()) do
                         if v:IsA("BasePart") then
                             v.CanCollide = false
@@ -460,71 +298,142 @@ PlayerTab:CreateToggle({
     end
 })
 
-PlayerTab:CreateToggle({
-    Name = "Fly Mode (WASD + Spasi + Ctrl)",
-    CurrentValue = false,
-    Flag = "FlyMode",
+-- Stats Section
+local StatsSection = PlayerTab:Section({
+    Name = "Stats",
+    Side = "Right"
+})
+
+StatsSection:Label("Player Name: " .. LocalPlayer.Name)
+StatsSection:Label("User ID: " .. LocalPlayer.UserId)
+StatsSection:Label("Account Age: " .. LocalPlayer.AccountAge .. " days")
+
+-- =============================================
+-- TAB ESP (KIRI & KANAN)
+-- =============================================
+local ESPTab = MainFrame:Tab("ESP")
+
+-- Fish ESP Section
+local FishESPSection = ESPTab:Section({
+    Name = "Fish ESP",
+    Side = "Left"
+})
+
+FishESPSection:Toggle({
+    Name = "Fish ESP",
+    Flag = "FishESP",
+    Default = Settings.FishESP,
     Callback = function(Value)
-        _G.Fly = Value
-        if _G.Fly then
-            local bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-            bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
-            bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
-
-            RunService.RenderStepped:Connect(function()
-                if _G.Fly and LocalPlayer.Character then
-                    local direction = Vector3.new(0, 0, 0)
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + Camera.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - Camera.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - Camera.CFrame.RightVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + Camera.CFrame.RightVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direction = direction + Vector3.new(0, 1, 0) end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direction = direction - Vector3.new(0, 1, 0) end
-
-                    bodyVelocity.Velocity = direction * 50
-                elseif not _G.Fly and bodyVelocity then
-                    bodyVelocity:Destroy()
+        Settings.FishESP = Value
+        if Value then
+            spawn(function()
+                while Settings.FishESP do
+                    wait(1)
+                    updateESP()
                 end
             end)
+        else
+            for _, v in pairs(ESP_Highlights) do
+                pcall(function() v:Destroy() end)
+            end
+            ESP_Highlights = {}
         end
     end
 })
 
-PlayerTab:CreateToggle({
-    Name = "Auto Potion",
-    CurrentValue = false,
-    Flag = "AutoPotion",
+FishESPSection:Colorpicker({
+    Name = "Fish ESP Color",
+    Flag = "FishESPColor",
+    Default = Settings.ESPColor,
     Callback = function(Value)
-        autoPotion = Value
+        Settings.ESPColor = Value
+        for _, v in pairs(ESP_Highlights) do
+            pcall(function() v.FillColor = Value end)
+        end
     end
 })
 
-PlayerTab:CreateButton({
-    Name = "Reset Character",
-    Callback = function()
-        if LocalPlayer.Character then
-            LocalPlayer.Character:BreakJoints()
+FishESPSection:Slider({
+    Name = "Fish ESP Transparency",
+    Flag = "FishESPTrans",
+    Default = Settings.ESPTransparency * 10,
+    Min = 1,
+    Max = 10,
+    Callback = function(Value)
+        Settings.ESPTransparency = Value / 10
+        for _, v in pairs(ESP_Highlights) do
+            pcall(function() v.FillTransparency = Value / 10 end)
+        end
+    end
+})
+
+-- Player ESP Section
+local PlayerESPSection = ESPTab:Section({
+    Name = "Player ESP",
+    Side = "Right"
+})
+
+PlayerESPSection:Toggle({
+    Name = "Player ESP",
+    Flag = "PlayerESP",
+    Default = Settings.PlayerESP,
+    Callback = function(Value)
+        Settings.PlayerESP = Value
+        if Value then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    -- Highlight
+                    local highlight = Instance.new("Highlight")
+                    highlight.Parent = player.Character
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.FillTransparency = 0.5
+                    
+                    -- Name
+                    if player.Character:FindFirstChild("Head") then
+                        local billboard = Instance.new("BillboardGui")
+                        local text = Instance.new("TextLabel")
+                        
+                        billboard.Parent = player.Character.Head
+                        billboard.Size = UDim2.new(0, 100, 0, 30)
+                        billboard.StudsOffset = Vector3.new(0, 2, 0)
+                        billboard.AlwaysOnTop = true
+                        
+                        text.Parent = billboard
+                        text.Size = UDim2.new(1, 0, 1, 0)
+                        text.BackgroundTransparency = 1
+                        text.Text = player.Name
+                        text.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        text.TextStrokeTransparency = 0
+                        text.TextSize = 14
+                    end
+                end
+            end
+        else
+            -- Hapus semua ESP
         end
     end
 })
 
 -- =============================================
--- MISC TAB
+-- TAB MISC
 -- =============================================
-local MiscTab = Window:CreateTab("Misc", "rbxassetid://4483345998")
+local MiscTab = MainFrame:Tab("Misc")
 
 -- Server Section
-local ServerSection = MiscTab:CreateSection("Server")
+local ServerSection = MiscTab:Section({
+    Name = "Server",
+    Side = "Left"
+})
 
-MiscTab:CreateButton({
+ServerSection:Button({
     Name = "Rejoin Game",
     Callback = function()
         game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
     end
 })
 
-MiscTab:CreateButton({
+ServerSection:Button({
     Name = "Server Hop",
     Callback = function()
         local HttpService = game:GetService("HttpService")
@@ -544,11 +453,18 @@ MiscTab:CreateButton({
     end
 })
 
-MiscTab:CreateToggle({
+-- Utility Section
+local UtilitySection = MiscTab:Section({
+    Name = "Utility",
+    Side = "Right"
+})
+
+UtilitySection:Toggle({
     Name = "Anti AFK",
-    CurrentValue = true,
     Flag = "AntiAFK",
+    Default = Settings.AntiAFK,
     Callback = function(Value)
+        Settings.AntiAFK = Value
         if Value then
             LocalPlayer.Idled:Connect(function()
                 VirtualUser:Button2Down(Vector2.new(0,0), Camera.CFrame)
@@ -559,188 +475,42 @@ MiscTab:CreateToggle({
     end
 })
 
--- Auto Sell Section
-local AutoSellSection = MiscTab:CreateSection("Auto Sell")
-
-MiscTab:CreateToggle({
-    Name = "Auto Sell Items",
-    CurrentValue = false,
-    Flag = "AutoSell",
-    Callback = function(Value)
-        autoSell = Value
-    end
-})
-
-MiscTab:CreateSlider({
-    Name = "Sell Interval",
-    Range = {30, 300},
-    Increment = 10,
-    Suffix = "Seconds",
-    CurrentValue = 60,
-    Flag = "SellInterval",
-})
-
--- Telegram
-MiscTab:CreateButton({
+UtilitySection:Button({
     Name = "Copy Telegram",
     Callback = function()
         setclipboard("t.me/Swill_Way")
-        Rayfield:Notify("Telegram link copied!")
     end
 })
 
 -- =============================================
--- SETTINGS TAB
+-- TAB SETTINGS
 -- =============================================
-local SettingsTab = Window:CreateTab("Settings", "rbxassetid://4483345998")
+local SettingsTab = MainFrame:Tab("Settings")
 
 -- UI Section
-local UISection = SettingsTab:CreateSection("UI Settings")
+local UISection = SettingsTab:Section({
+    Name = "UI Settings",
+    Side = "Left"
+})
 
-SettingsTab:CreateButton({
+UISection:Keybind({
+    Name = "Toggle UI",
+    Flag = "ToggleUI",
+    Default = "F4",
+    Callback = function(Keybind)
+        -- Already handled by UI library
+    end
+})
+
+UISection:Button({
     Name = "Destroy UI",
     Callback = function()
-        Rayfield:Destroy()
-    end
-})
-
-SettingsTab:CreateKeybind({
-    Name = "Toggle UI Keybind",
-    CurrentKeybind = "F4",
-    HoldToInteract = false,
-    Flag = "ToggleUIKeybind",
-    Callback = function(Keybind)
-        Rayfield:Notify("UI Toggle: " .. Keybind)
-    end
-})
-
-SettingsTab:CreateToggle({
-    Name = "Show FPS Counter",
-    CurrentValue = false,
-    Flag = "ShowFPS",
-    Callback = function(Value)
-        if Value then
-            local fpsCounter = Instance.new("ScreenGui")
-            local fpsFrame = Instance.new("Frame")
-            local fpsText = Instance.new("TextLabel")
-            
-            fpsCounter.Name = "TheForge_FPS"
-            fpsCounter.Parent = game:GetService("CoreGui")
-            fpsCounter.ResetOnSpawn = false
-            
-            fpsFrame.Parent = fpsCounter
-            fpsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            fpsFrame.BackgroundTransparency = 0.5
-            fpsFrame.BorderSizePixel = 0
-            fpsFrame.Position = UDim2.new(1, -70, 0, 10)
-            fpsFrame.Size = UDim2.new(0, 60, 0, 25)
-            
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 5)
-            corner.Parent = fpsFrame
-            
-            fpsText.Parent = fpsFrame
-            fpsText.Size = UDim2.new(1, 0, 1, 0)
-            fpsText.BackgroundTransparency = 1
-            fpsText.Font = Enum.Font.GothamBold
-            fpsText.Text = "FPS: 60"
-            fpsText.TextColor3 = Color3.fromRGB(0, 255, 0)
-            fpsText.TextSize = 12
-            
-            _G.FPSFrame = fpsCounter
-            _G.FPSText = fpsText
-            _G.LastTime = tick()
-            _G.Frames = 0
-            
-            RunService.RenderStepped:Connect(function()
-                if _G.FPSText then
-                    _G.Frames = _G.Frames + 1
-                    if tick() - _G.LastTime >= 1 then
-                        _G.FPSText.Text = "FPS: " .. _G.Frames
-                        _G.Frames = 0
-                        _G.LastTime = tick()
-                    end
-                end
-            end)
-        else
-            if _G.FPSFrame then
-                _G.FPSFrame:Destroy()
-                _G.FPSFrame = nil
-            end
-        end
+        MainFrame:Destroy()
     end
 })
 
 -- =============================================
--- DRAG & RESIZE HANDLE (TAMBAHAN)
--- =============================================
-
--- Tunggu window muncul
-wait(1)
-local rayfieldWindow = nil
-for _, v in pairs(game:GetService("CoreGui"):GetDescendants()) do
-    if v:IsA("Frame") and v.Name:find("Rayfield") then
-        rayfieldWindow = v
-        break
-    end
-end
-
-if rayfieldWindow then
-    -- Buat handle resize
-    local resizeHandle = Instance.new("Frame")
-    resizeHandle.Name = "ResizeHandle"
-    resizeHandle.Parent = rayfieldWindow
-    resizeHandle.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-    resizeHandle.BackgroundTransparency = 0.7
-    resizeHandle.BorderSizePixel = 0
-    resizeHandle.Position = UDim2.new(1, -15, 1, -15)
-    resizeHandle.Size = UDim2.new(0, 15, 0, 15)
-    resizeHandle.ZIndex = 10
-    resizeHandle.Cursor = "SizeAll"
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 3)
-    corner.Parent = resizeHandle
-    
-    local icon = Instance.new("TextLabel")
-    icon.Parent = resizeHandle
-    icon.BackgroundTransparency = 1
-    icon.Size = UDim2.new(1, 0, 1, 0)
-    icon.Font = Enum.Font.GothamBold
-    icon.Text = "◢"
-    icon.TextColor3 = Color3.fromRGB(255, 255, 255)
-    icon.TextSize = 12
-    
-    -- Resize functionality
-    local resizing = false
-    local resizeStart, startSize
-    
-    resizeHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            resizing = true
-            resizeStart = input.Position
-            startSize = rayfieldWindow.Size
-        end
-    end)
-    
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            resizing = false
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - resizeStart
-            local newWidth = math.max(400, startSize.X.Offset + delta.X)
-            local newHeight = math.max(300, startSize.Y.Offset + delta.Y)
-            rayfieldWindow.Size = UDim2.new(0, newWidth, 0, newHeight)
-        end
-    end)
-end
-
--- =============================================
--- AUTO ANTI AFK (Default ON)
+-- AUTO ANTI AFK
 -- =============================================
 LocalPlayer.Idled:Connect(function()
     VirtualUser:Button2Down(Vector2.new(0,0), Camera.CFrame)
@@ -749,44 +519,8 @@ LocalPlayer.Idled:Connect(function()
 end)
 
 -- =============================================
--- WATERMARK
+-- WATERMARK & NOTIFICATION
 -- =============================================
-local watermark = Instance.new("ScreenGui")
-local wmFrame = Instance.new("Frame")
-local wmText = Instance.new("TextLabel")
-
-watermark.Name = "TheForge_Watermark"
-watermark.Parent = game:GetService("CoreGui")
-watermark.ResetOnSpawn = false
-
-wmFrame.Parent = watermark
-wmFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-wmFrame.BackgroundTransparency = 0.5
-wmFrame.BorderSizePixel = 0
-wmFrame.Position = UDim2.new(0, 10, 1, -40)
-wmFrame.Size = UDim2.new(0, 180, 0, 30)
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 5)
-corner.Parent = wmFrame
-
-wmText.Parent = wmFrame
-wmText.Size = UDim2.new(1, 0, 1, 0)
-wmText.BackgroundTransparency = 1
-wmText.Font = Enum.Font.GothamBold
-wmText.Text = "🔨 THE FORGE SCRIPT v1.0"
-wmText.TextColor3 = Color3.fromRGB(255, 100, 0)
-wmText.TextSize = 14
-
--- =============================================
--- NOTIFICATION & INIT
--- =============================================
-Rayfield:Notify({
-    Title = "🔨 THE FORGE SCRIPT",
-    Content = "Version 1.0.0 loaded! Press F4 to toggle UI",
-    Duration = 5
-})
-
-print("✅ THE FORGE SCRIPT v1.0.0 loaded with 30+ features!")
+print("✅ FISH IT SCRIPT loaded successfully!")
 print("📱 Telegram: t.me/Swill_Way")
 print("🎯 Press F4 to toggle UI")
