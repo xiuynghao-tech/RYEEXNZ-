@@ -1,6 +1,6 @@
 -- Loader untuk RYEEXNZ
 -- Ganti URL di bawah dengan URL repository Anda
-local scriptURL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/RYEEXNZ.lua"
+local scriptURL = "https://raw.githubusercontent.com/xiuynghao-tech/RYEEXNZ-/refs/heads/main/RYEEXNZ"
 
 local function loadRYEEXNZ()
     local success, result = pcall(function()
