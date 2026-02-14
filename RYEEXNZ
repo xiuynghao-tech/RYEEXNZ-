@@ -1,6 +1,6 @@
 --[[ 
-    FISCH SCRIPT - Rayfield UI Version (LENGKAP DENGAN FITUR)
-    Version: 1.0.0
+    RYEENZY EXPLOIT - FULL VERSION
+    Version: 2.0.0
     Telegram: t.me/Swill_Way
 ]]
 
@@ -9,15 +9,15 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Create Window
 local Window = Rayfield:CreateWindow({
-    Name = "RYEENZY EXPLOIT [BETA]",
-    LoadingTitle = "Loading Fisch Script...",
-    LoadingSubtitle = "by RYEEXNZ",
+    Name = "RYEENZY EXPLOIT v2.0.0",
+    LoadingTitle = "Loading RYEENZY...",
+    LoadingSubtitle = "by RYEENZY TEAM",
     Theme = "Default",
     ToggleUIKeybind = "F4",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "FischConfig",
-        FileName = "FischScript"
+        FolderName = "RYEENZYConfig",
+        FileName = "RYEENZY"
     }
 })
 
@@ -31,39 +31,67 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local Camera = Workspace.CurrentCamera
 
--- Variabel Global
-local autoFishing = false
-local autoCast = false
-local fishESP = false
+-- =============================================
+-- MAIN TAB (FITUR UTAMA)
+-- =============================================
+local MainTab = Window:CreateTab("Main", "rbxassetid://4483345998")
 
--- =============================================
--- AUTO FISH TAB
--- =============================================
-local MainTab = Window:CreateTab("Auto Fish", "rbxassetid://4483345998")
+-- Auto Farm Section
+local AutoFarmSection = MainTab:CreateSection("Auto Farm")
 
 MainTab:CreateToggle({
-    Name = "Auto Fishing",
+    Name = "Auto Farm (Universal)",
     CurrentValue = false,
-    Flag = "AutoFishing",
+    Flag = "AutoFarm",
     Callback = function(Value)
-        autoFishing = Value
-        Rayfield:Notify({
-            Title = "Auto Fishing",
-            Content = Value and "Started" or "Stopped",
-            Duration = 2
-        })
+        _G.AutoFarm = Value
+        Rayfield:Notify("Auto Farm " .. (Value and "Activated" or "Deactivated"))
     end
 })
 
-MainTab:CreateButton({
-    Name = "Cast Line",
-    Callback = function()
-        Rayfield:Notify({
-            Title = "Cast",
-            Content = "Manual cast - sesuaikan dengan game",
-            Duration = 2
-        })
+MainTab:CreateToggle({
+    Name = "Auto Collect Drops",
+    CurrentValue = false,
+    Flag = "AutoCollect",
+    Callback = function(Value)
+        _G.AutoCollect = Value
     end
+})
+
+MainTab:CreateSlider({
+    Name = "Farm Range",
+    Range = {10, 100},
+    Increment = 5,
+    Suffix = "Studs",
+    CurrentValue = 30,
+    Flag = "FarmRange",
+})
+
+-- Combat Section
+local CombatSection = MainTab:CreateSection("Combat")
+
+MainTab:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Flag = "Aimbot",
+})
+
+MainTab:CreateToggle({
+    Name = "Silent Aim",
+    CurrentValue = false,
+    Flag = "SilentAim",
+})
+
+MainTab:CreateToggle({
+    Name = "ESP Players",
+    CurrentValue = false,
+    Flag = "ESPToggle",
+})
+
+MainTab:CreateToggle({
+    Name = "Wallhack",
+    CurrentValue = false,
+    Flag = "Wallhack",
 })
 
 -- =============================================
@@ -71,10 +99,12 @@ MainTab:CreateButton({
 -- =============================================
 local PlayerTab = Window:CreateTab("Player", "rbxassetid://4483345998")
 
--- WalkSpeed Slider
+-- Movement Section
+local MovementSection = PlayerTab:CreateSection("Movement")
+
 PlayerTab:CreateSlider({
     Name = "WalkSpeed",
-    Range = {16, 250},
+    Range = {16, 500},
     Increment = 1,
     Suffix = "Speed",
     CurrentValue = 16,
@@ -86,10 +116,9 @@ PlayerTab:CreateSlider({
     end
 })
 
--- JumpPower Slider
 PlayerTab:CreateSlider({
     Name = "JumpPower",
-    Range = {50, 250},
+    Range = {50, 500},
     Increment = 1,
     Suffix = "Power",
     CurrentValue = 50,
@@ -101,7 +130,6 @@ PlayerTab:CreateSlider({
     end
 })
 
--- Gravity Slider
 PlayerTab:CreateSlider({
     Name = "Gravity",
     Range = {0, 500},
@@ -114,7 +142,22 @@ PlayerTab:CreateSlider({
     end
 })
 
--- NoClip Toggle
+PlayerTab:CreateToggle({
+    Name = "Infinity Jump",
+    CurrentValue = false,
+    Flag = "InfJump",
+    Callback = function(Value)
+        _G.InfJump = Value
+        if _G.InfJump then
+            UserInputService.JumpRequest:Connect(function()
+                if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end)
+        end
+    end
+})
+
 PlayerTab:CreateToggle({
     Name = "NoClip (Tembus Dinding)",
     CurrentValue = false,
@@ -135,7 +178,6 @@ PlayerTab:CreateToggle({
     end
 })
 
--- Fly Mode Toggle
 PlayerTab:CreateToggle({
     Name = "Fly Mode (WASD + Spasi + Ctrl)",
     CurrentValue = false,
@@ -167,14 +209,36 @@ PlayerTab:CreateToggle({
     end
 })
 
+-- Character Section
+local CharacterSection = PlayerTab:CreateSection("Character")
+
+PlayerTab:CreateButton({
+    Name = "Reset Character",
+    Callback = function()
+        if LocalPlayer.Character then
+            LocalPlayer.Character:BreakJoints()
+            Rayfield:Notify("Character Reset")
+        end
+    end
+})
+
+PlayerTab:CreateButton({
+    Name = "God Mode (Refresh)",
+    Callback = function()
+        Rayfield:Notify("God Mode Activated (if supported)")
+    end
+})
+
 -- =============================================
 -- ESP TAB
 -- =============================================
 local ESPTab = Window:CreateTab("ESP", "rbxassetid://4483345998")
 
--- Player ESP Toggle
+-- Player ESP Section
+local PlayerESPSection = ESPTab:CreateSection("Player ESP")
+
 ESPTab:CreateToggle({
-    Name = "Player ESP",
+    Name = "Enable Player ESP",
     CurrentValue = false,
     Flag = "PlayerESP",
     Callback = function(Value)
@@ -201,39 +265,77 @@ ESPTab:CreateToggle({
     end
 })
 
--- Fish ESP Toggle (untuk game fishing)
 ESPTab:CreateToggle({
-    Name = "Fish ESP",
+    Name = "Name ESP",
     CurrentValue = false,
-    Flag = "FishESP",
+    Flag = "NameESP",
     Callback = function(Value)
-        fishESP = Value
-        if fishESP then
-            spawn(function()
-                while fishESP do
-                    wait(1)
-                    for _, v in pairs(Workspace:GetDescendants()) do
-                        if v:IsA("Model") and (v.Name:lower():find("fish") or v.Name:lower():find("ikan")) then
-                            if not v:FindFirstChild("FishESP_Highlight") then
-                                local highlight = Instance.new("Highlight")
-                                highlight.Name = "FishESP_Highlight"
-                                highlight.Parent = v
-                                highlight.FillColor = Color3.fromRGB(0, 255, 255)
-                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                                highlight.FillTransparency = 0.5
-                            end
-                        end
+        if Value then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                    if not player.Character.Head:FindFirstChild("NameESP") then
+                        local billboard = Instance.new("BillboardGui")
+                        local textLabel = Instance.new("TextLabel")
+                        
+                        billboard.Name = "NameESP"
+                        billboard.Parent = player.Character.Head
+                        billboard.Size = UDim2.new(0, 100, 0, 30)
+                        billboard.StudsOffset = Vector3.new(0, 2, 0)
+                        billboard.AlwaysOnTop = true
+                        
+                        textLabel.Parent = billboard
+                        textLabel.Size = UDim2.new(1, 0, 1, 0)
+                        textLabel.BackgroundTransparency = 1
+                        textLabel.Text = player.Name
+                        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        textLabel.TextStrokeTransparency = 0
+                        textLabel.TextSize = 14
                     end
                 end
-            end)
+            end
         else
-            for _, v in pairs(Workspace:GetDescendants()) do
-                if v:FindFirstChild("FishESP_Highlight") then
-                    v.FishESP_Highlight:Destroy()
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("Head") then
+                    if player.Character.Head:FindFirstChild("NameESP") then
+                        player.Character.Head.NameESP:Destroy()
+                    end
                 end
             end
         end
     end
+})
+
+ESPTab:CreateToggle({
+    Name = "Tracers",
+    CurrentValue = false,
+    Flag = "Tracers",
+})
+
+ESPTab:CreateColorpicker({
+    Name = "ESP Color",
+    CurrentValue = Color3.fromRGB(255, 0, 0),
+    Flag = "ESPColor",
+})
+
+-- Object ESP Section
+local ObjectESPSection = ESPTab:CreateSection("Object ESP")
+
+ESPTab:CreateToggle({
+    Name = "Chest ESP",
+    CurrentValue = false,
+    Flag = "ChestESP",
+})
+
+ESPTab:CreateToggle({
+    Name = "Item ESP",
+    CurrentValue = false,
+    Flag = "ItemESP",
+})
+
+ESPTab:CreateToggle({
+    Name = "NPC ESP",
+    CurrentValue = false,
+    Flag = "NPCCESP",
 })
 
 -- =============================================
@@ -241,7 +343,9 @@ ESPTab:CreateToggle({
 -- =============================================
 local TeleportTab = Window:CreateTab("Teleport", "rbxassetid://4483345998")
 
--- Click Teleport Toggle
+-- Teleport Options
+local TeleportSection = TeleportTab:CreateSection("Teleport Options")
+
 TeleportTab:CreateToggle({
     Name = "Click Teleport",
     CurrentValue = false,
@@ -261,18 +365,137 @@ TeleportTab:CreateToggle({
     end
 })
 
--- Teleport to Spawn
 TeleportTab:CreateButton({
     Name = "Teleport to Spawn",
     Callback = function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
-            Rayfield:Notify({
-                Title = "Teleported",
-                Content = "To spawn location",
-                Duration = 2
-            })
+            Rayfield:Notify("Teleported to Spawn")
         end
+    end
+})
+
+TeleportTab:CreateButton({
+    Name = "Teleport to Mouse",
+    Callback = function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local target = Mouse.Hit
+            if target then
+                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(target.X, target.Y + 3, target.Z)
+                Rayfield:Notify("Teleported to Mouse")
+            end
+        end
+    end
+})
+
+-- Player Teleport Section
+local PlayerTeleportSection = TeleportTab:CreateSection("Teleport to Player")
+
+-- Create dropdown for players
+local playerList = {}
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        table.insert(playerList, player.Name)
+    end
+end
+
+local PlayerDropdown = TeleportTab:CreateDropdown({
+    Name = "Select Player",
+    Options = playerList,
+    CurrentOption = playerList[1],
+    Flag = "SelectedPlayer",
+    Callback = function(Option)
+        _G.SelectedPlayer = Option
+    end
+})
+
+TeleportTab:CreateButton({
+    Name = "Teleport to Selected Player",
+    Callback = function()
+        if _G.SelectedPlayer then
+            local target = Players:FindFirstChild(_G.SelectedPlayer)
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                Rayfield:Notify("Teleported to " .. _G.SelectedPlayer)
+            end
+        end
+    end
+})
+
+-- =============================================
+-- WORLD TAB
+-- =============================================
+local WorldTab = Window:CreateTab("World", "rbxassetid://4483345998")
+
+-- Environment Section
+local EnvironmentSection = WorldTab:CreateSection("Environment")
+
+WorldTab:CreateToggle({
+    Name = "Fullbright",
+    CurrentValue = false,
+    Flag = "Fullbright",
+    Callback = function(Value)
+        if Value then
+            game:GetService("Lighting").Ambient = Color3.fromRGB(255, 255, 255)
+            game:GetService("Lighting").Brightness = 2
+        else
+            game:GetService("Lighting").Ambient = Color3.fromRGB(0, 0, 0)
+            game:GetService("Lighting").Brightness = 1
+        end
+    end
+})
+
+WorldTab:CreateSlider({
+    Name = "Time",
+    Range = {0, 24},
+    Increment = 0.5,
+    Suffix = "Hours",
+    CurrentValue = 12,
+    Flag = "Time",
+    Callback = function(Value)
+        game:GetService("Lighting").ClockTime = Value
+    end
+})
+
+WorldTab:CreateToggle({
+    Name = "No Fog",
+    CurrentValue = false,
+    Flag = "NoFog",
+    Callback = function(Value)
+        if Value then
+            game:GetService("Lighting").FogEnd = 100000
+        else
+            game:GetService("Lighting").FogEnd = 100000
+        end
+    end
+})
+
+-- Map Section
+local MapSection = WorldTab:CreateSection("Map")
+
+WorldTab:CreateButton({
+    Name = "Clear Map (Remove Parts)",
+    Callback = function()
+        local count = 0
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if v:IsA("Part") and not v.Anchored then
+                v:Destroy()
+                count = count + 1
+            end
+        end
+        Rayfield:Notify("Removed " .. count .. " parts")
+    end
+})
+
+WorldTab:CreateButton({
+    Name = "Delete All Debris",
+    Callback = function()
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if v:IsA("Part") and (v.Name:lower():find("debris") or v.Name:lower():find("glass") or v.Name:lower():find("trash")) then
+                v:Destroy()
+            end
+        end
+        Rayfield:Notify("Debris cleared")
     end
 })
 
@@ -281,7 +504,9 @@ TeleportTab:CreateButton({
 -- =============================================
 local MiscTab = Window:CreateTab("Misc", "rbxassetid://4483345998")
 
--- Rejoin Game
+-- Server Section
+local ServerSection = MiscTab:CreateSection("Server")
+
 MiscTab:CreateButton({
     Name = "Rejoin Game",
     Callback = function()
@@ -289,7 +514,6 @@ MiscTab:CreateButton({
     end
 })
 
--- Server Hop
 MiscTab:CreateButton({
     Name = "Server Hop",
     Callback = function()
@@ -310,7 +534,6 @@ MiscTab:CreateButton({
     end
 })
 
--- Anti AFK Toggle
 MiscTab:CreateToggle({
     Name = "Anti AFK",
     CurrentValue = true,
@@ -326,16 +549,55 @@ MiscTab:CreateToggle({
     end
 })
 
--- Copy Telegram
+-- Utility Section
+local UtilitySection = MiscTab:CreateSection("Utility")
+
 MiscTab:CreateButton({
     Name = "Copy Telegram",
     Callback = function()
         setclipboard("t.me/Swill_Way")
+        Rayfield:Notify("Telegram link copied!")
+    end
+})
+
+MiscTab:CreateButton({
+    Name = "Get Player Info",
+    Callback = function()
+        local info = string.format(
+            "Name: %s\nUserID: %d\nAccount Age: %d",
+            LocalPlayer.Name,
+            LocalPlayer.UserId,
+            LocalPlayer.AccountAge
+        )
         Rayfield:Notify({
-            Title = "Telegram",
-            Content = "Link copied!",
-            Duration = 2
+            Title = "Player Info",
+            Content = info,
+            Duration = 5
         })
+    end
+})
+
+-- Script Loader Section
+local ScriptSection = MiscTab:CreateSection("Script Loader")
+
+MiscTab:CreateButton({
+    Name = "Load Infinite Yield",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    end
+})
+
+MiscTab:CreateButton({
+    Name = "Load Dex Explorer",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
+    end
+})
+
+MiscTab:CreateButton({
+    Name = "Load CMD-X",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/source"))()
     end
 })
 
@@ -344,7 +606,9 @@ MiscTab:CreateButton({
 -- =============================================
 local SettingsTab = Window:CreateTab("Settings", "rbxassetid://4483345998")
 
--- Destroy UI
+-- UI Section
+local UISection = SettingsTab:CreateSection("UI Settings")
+
 SettingsTab:CreateButton({
     Name = "Destroy UI",
     Callback = function()
@@ -352,22 +616,16 @@ SettingsTab:CreateButton({
     end
 })
 
--- Toggle UI Keybind
 SettingsTab:CreateKeybind({
     Name = "Toggle UI Keybind",
     CurrentKeybind = "F4",
     HoldToInteract = false,
     Flag = "ToggleUIKeybind",
     Callback = function(Keybind)
-        Rayfield:Notify({
-            Title = "Keybind Changed",
-            Content = "UI Toggle: " .. Keybind,
-            Duration = 2
-        })
+        Rayfield:Notify("UI Toggle: " .. Keybind)
     end
 })
 
--- FPS Counter
 SettingsTab:CreateToggle({
     Name = "Show FPS Counter",
     CurrentValue = false,
@@ -378,7 +636,7 @@ SettingsTab:CreateToggle({
             local fpsFrame = Instance.new("Frame")
             local fpsText = Instance.new("TextLabel")
             
-            fpsCounter.Name = "Fisch_FPS"
+            fpsCounter.Name = "RYEENZY_FPS"
             fpsCounter.Parent = game:GetService("CoreGui")
             fpsCounter.ResetOnSpawn = false
             
@@ -397,82 +655,4 @@ SettingsTab:CreateToggle({
             fpsText.Size = UDim2.new(1, 0, 1, 0)
             fpsText.BackgroundTransparency = 1
             fpsText.Font = Enum.Font.GothamBold
-            fpsText.Text = "FPS: 60"
-            fpsText.TextColor3 = Color3.fromRGB(0, 255, 0)
-            fpsText.TextSize = 12
-            
-            _G.FPSFrame = fpsCounter
-            _G.FPSText = fpsText
-            _G.LastTime = tick()
-            _G.Frames = 0
-            
-            RunService.RenderStepped:Connect(function()
-                if _G.FPSText then
-                    _G.Frames = _G.Frames + 1
-                    if tick() - _G.LastTime >= 1 then
-                        _G.FPSText.Text = "FPS: " .. _G.Frames
-                        _G.Frames = 0
-                        _G.LastTime = tick()
-                    end
-                end
-            end)
-        else
-            if _G.FPSFrame then
-                _G.FPSFrame:Destroy()
-                _G.FPSFrame = nil
-            end
-        end
-    end
-})
-
--- =============================================
--- AUTO ANTI AFK (Default ON)
--- =============================================
-LocalPlayer.Idled:Connect(function()
-    VirtualUser:Button2Down(Vector2.new(0,0), Camera.CFrame)
-    wait(1)
-    VirtualUser:Button2Up(Vector2.new(0,0), Camera.CFrame)
-end)
-
--- =============================================
--- WATERMARK
--- =============================================
-local watermark = Instance.new("ScreenGui")
-local wmFrame = Instance.new("Frame")
-local wmText = Instance.new("TextLabel")
-
-watermark.Name = "Fisch_Watermark"
-watermark.Parent = game:GetService("CoreGui")
-watermark.ResetOnSpawn = false
-
-wmFrame.Parent = watermark
-wmFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-wmFrame.BackgroundTransparency = 0.5
-wmFrame.BorderSizePixel = 0
-wmFrame.Position = UDim2.new(0, 10, 1, -40)
-wmFrame.Size = UDim2.new(0, 160, 0, 30)
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 5)
-corner.Parent = wmFrame
-
-wmText.Parent = wmFrame
-wmText.Size = UDim2.new(1, 0, 1, 0)
-wmText.BackgroundTransparency = 1
-wmText.Font = Enum.Font.GothamBold
-wmText.Text = "🐟 FISCH SCRIPT v1.0"
-wmText.TextColor3 = Color3.fromRGB(0, 200, 255)
-wmText.TextSize = 14
-
--- =============================================
--- NOTIFICATION & INIT
--- =============================================
-Rayfield:Notify({
-    Title = "🐟 FISCH SCRIPT",
-    Content = "Version 1.0.0 loaded! Press F4 to toggle UI",
-    Duration = 3
-})
-
-print("✅ FISCH SCRIPT LOADED with 20+ features!")
-print("📱 Telegram: t.me/Swill_Way")
-print("🎯 Press F4 to toggle UI")
+ 
