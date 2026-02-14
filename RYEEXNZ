@@ -1,843 +1,623 @@
 --[[
-    THE FORGE - RAFLYED UI EDITION
-    Fully Compatible with All Executors
-    Designed by: Swill Way Team
+    RYEENZY EXPLOIT - Scoot UI Edition
+    Menggunakan library Scoot UI (by samet)
     Telegram: t.me/Swill_Way
 ]]
 
---// Anti Crash & Loaded Check
-if _G.TheForgeLoaded then return end
-_G.TheForgeLoaded = true
+-- Pastikan library Scoot UI dimuat (sesuai URL yang Anda berikan)
+loadstring(game:HttpGet("https://raw.githubusercontent.com/x2Swiftz/UI-Library/refs/heads/main/Libraries/Scoot%20UI%20-%20Example.lua"))()
 
---// Environment Setup dengan Fallback
-local coreGui = syn and syn.protect_gui and (syn.protect_gui or function(g) end) and game:GetService("CoreGui") or 
-                (not is_sirhurt and not is_sentinel and cloneref and cloneref(game:GetService("CoreGui"))) or 
-                game:GetService("CoreGui")
+-- Tunggu sebentar hingga library siap
+task.wait(0.5)
 
-local players = game:GetService("Players")
-local runService = game:GetService("RunService")
-local userInput = game:GetService("UserInputService")
-local tweenService = game:GetService("TweenService")
-local localPlayer = players.LocalPlayer
-local mouse = localPlayer:GetMouse()
-local camera = workspace.CurrentCamera
-
---// Executor Compatibility Functions
-local function protectGui(gui)
-    local s, e = pcall(function()
-        if syn and syn.protect_gui then
-            syn.protect_gui(gui)
-        elseif gethui then
-            for _, v in pairs(gethui()) do
-                if v == gui then return end
-            end
-            gui.Parent = gethui()
-        elseif cloneref and coreGui then
-            gui.Parent = coreGui
-        end
-    end)
-    return s
+-- Periksa apakah library berhasil dimuat
+if not Library then
+    warn("Scoot UI gagal dimuat! Periksa koneksi atau sumber library.")
+    return
 end
 
---=================================--
---      RAFLYED UI LIBRARY         --
---=================================--
+-- ==================================================
+-- MEMBUAT WINDOW UTAMA
+-- ==================================================
+local Window = Library:CreateWindow({
+    Name = "RYEENZY EXPLOIT",
+    Subtitle = "The Ultimate Roblox Exploit",
+    Size = UDim2.new(0, 700, 0, 450),
+    Position = UDim2.new(0.5, -350, 0.5, -225),
+    Theme = "Preset", -- Menggunakan tema preset dari library
+    Keybind = Enum.KeyCode.RightControl -- Tombol untuk membuka/tutup GUI
+})
 
-local RaflyedUI = {}
-
-function RaflyedUI:CreateWindow(title, subtitle)
-    -- ScreenGui dengan multiple parent fallback
+-- Jika Window tidak berhasil dibuat, buat secara manual dengan instance dasar
+if not Window then
+    -- Fallback: Buat GUI sederhana jika Window gagal
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "TheForge_Raflyed"
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Name = "RYEENZY_Exploit"
+    screenGui.Parent = gethui and gethui() or game:GetService("CoreGui")
     screenGui.ResetOnSpawn = false
     
-    -- Try multiple parent options
-    local parentSuccess = false
-    local parentOptions = {
-        coreGui,
-        localPlayer:FindFirstChild("PlayerGui"),
-        game:GetService("StarterGui"),
-        game:GetService("CoreGui")
-    }
+    local frame = Instance.new("Frame")
+    frame.Parent = screenGui
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    frame.BorderSizePixel = 0
+    frame.Position = UDim2.new(0.5, -300, 0.5, -200)
+    frame.Size = UDim2.new(0, 600, 0, 400)
+    frame.Active = true
+    frame.Draggable = true
     
-    for _, parent in ipairs(parentOptions) do
-        if parent then
-            local s, e = pcall(function()
-                screenGui.Parent = parent
-            end)
-            if s and screenGui.Parent then
-                parentSuccess = true
-                break
-            end
-        end
-    end
-    
-    if not parentSuccess then
-        screenGui.Parent = game:GetService("Players").LocalPlayer.PlayerGui
-    end
-    
-    protectGui(screenGui)
-    
-    -- Main Frame with Drop Shadow
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Name = "MainFrame"
-    mainFrame.Parent = screenGui
-    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
-    mainFrame.Size = UDim2.new(0, 500, 0, 350)
-    mainFrame.Active = true
-    mainFrame.Draggable = true
-    mainFrame.ClipsDescendants = true
-    
-    -- Shadow Effect
-    local shadow = Instance.new("ImageLabel")
-    shadow.Name = "Shadow"
-    shadow.Parent = mainFrame
-    shadow.BackgroundTransparency = 1
-    shadow.Position = UDim2.new(0, -10, 0, -10)
-    shadow.Size = UDim2.new(1, 20, 1, 20)
-    shadow.Image = "rbxassetid://6015897843"
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.ImageTransparency = 0.5
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(10, 10, 10, 10)
-    
-    -- Title Bar
-    local titleBar = Instance.new("Frame")
-    titleBar.Name = "TitleBar"
-    titleBar.Parent = mainFrame
-    titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    titleBar.BorderSizePixel = 0
-    titleBar.Size = UDim2.new(1, 0, 0, 35)
-    
-    -- Gradient Effect
-    local gradient = Instance.new("UIGradient")
-    gradient.Parent = titleBar
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 60)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 35))
-    })
-    gradient.Rotation = 90
-    
-    -- Title
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Name = "TitleLabel"
-    titleLabel.Parent = titleBar
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Position = UDim2.new(0, 15, 0, 0)
-    titleLabel.Size = UDim2.new(0, 200, 1, 0)
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = title or "THE FORGE"
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextSize = 18
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Subtitle
-    local subtitleLabel = Instance.new("TextLabel")
-    subtitleLabel.Name = "SubtitleLabel"
-    subtitleLabel.Parent = titleBar
-    subtitleLabel.BackgroundTransparency = 1
-    subtitleLabel.Position = UDim2.new(0, 15, 0, 18)
-    subtitleLabel.Size = UDim2.new(0, 200, 0, 15)
-    subtitleLabel.Font = Enum.Font.Gotham
-    subtitleLabel.Text = subtitle or "Raflyed UI Edition"
-    subtitleLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-    subtitleLabel.TextSize = 10
-    subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Close Button
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Name = "CloseButton"
-    closeBtn.Parent = titleBar
-    closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Position = UDim2.new(1, -40, 0, 7)
-    closeBtn.Size = UDim2.new(0, 30, 0, 20)
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.Text = "X"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.TextSize = 14
-    closeBtn.AutoButtonColor = false
-    
-    -- Minimize Button
-    local minBtn = Instance.new("TextButton")
-    minBtn.Name = "MinimizeButton"
-    minBtn.Parent = titleBar
-    minBtn.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
-    minBtn.BorderSizePixel = 0
-    minBtn.Position = UDim2.new(1, -75, 0, 7)
-    minBtn.Size = UDim2.new(0, 30, 0, 20)
-    minBtn.Font = Enum.Font.GothamBold
-    minBtn.Text = "-"
-    minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    minBtn.TextSize = 16
-    
-    local minimized = false
-    minBtn.MouseButton1Click:Connect(function()
-        minimized = not minimized
-        if minimized then
-            mainFrame:TweenSize(UDim2.new(0, 500, 0, 35), "Out", "Quad", 0.3, true)
-            minBtn.Text = "+"
-        else
-            mainFrame:TweenSize(UDim2.new(0, 500, 0, 350), "Out", "Quad", 0.3, true)
-            minBtn.Text = "-"
-        end
-    end)
-    
-    closeBtn.MouseButton1Click:Connect(function()
-        screenGui:Destroy()
-    end)
-    
-    -- Tab Container
-    local tabContainer = Instance.new("Frame")
-    tabContainer.Name = "TabContainer"
-    tabContainer.Parent = mainFrame
-    tabContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    tabContainer.BorderSizePixel = 0
-    tabContainer.Position = UDim2.new(0, 0, 0, 35)
-    tabContainer.Size = UDim2.new(1, 0, 1, -35)
-    
-    -- Sidebar for tabs
-    local sidebar = Instance.new("Frame")
-    sidebar.Name = "Sidebar"
-    sidebar.Parent = tabContainer
-    sidebar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    sidebar.BorderSizePixel = 0
-    sidebar.Size = UDim2.new(0, 120, 1, 0)
-    
-    -- Content Area
-    local contentArea = Instance.new("Frame")
-    contentArea.Name = "ContentArea"
-    contentArea.Parent = tabContainer
-    contentArea.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    contentArea.BorderSizePixel = 0
-    contentArea.Position = UDim2.new(0, 120, 0, 0)
-    contentArea.Size = UDim2.new(1, -120, 1, 0)
-    
-    local window = {
-        ScreenGui = screenGui,
-        MainFrame = mainFrame,
-        Sidebar = sidebar,
-        ContentArea = contentArea,
-        Tabs = {},
-        Flags = {},
-        CurrentTab = nil
-    }
-    
-    return window
-end
-
-function RaflyedUI:CreateTab(window, name, icon)
-    local tabButton = Instance.new("TextButton")
-    tabButton.Name = name.."Button"
-    tabButton.Parent = window.Sidebar
-    tabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    tabButton.BorderSizePixel = 0
-    tabButton.Position = UDim2.new(0, 5, 0, 5 + (#window.Tabs * 40))
-    tabButton.Size = UDim2.new(1, -10, 0, 35)
-    tabButton.AutoButtonColor = false
-    tabButton.Font = Enum.Font.Gotham
-    tabButton.Text = icon and (icon.."  "..name) or name
-    tabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-    tabButton.TextSize = 13
-    tabButton.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Hover Effect
-    tabButton.MouseEnter:Connect(function()
-        if window.CurrentTab ~= tabButton then
-            tabButton.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-        end
-    end)
-    
-    tabButton.MouseLeave:Connect(function()
-        if window.CurrentTab ~= tabButton then
-            tabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-        end
-    end)
-    
-    -- Tab Content Frame
-    local tabFrame = Instance.new("ScrollingFrame")
-    tabFrame.Name = name.."Frame"
-    tabFrame.Parent = window.ContentArea
-    tabFrame.Active = true
-    tabFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    tabFrame.BorderSizePixel = 0
-    tabFrame.ScrollBarThickness = 6
-    tabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    tabFrame.Visible = #window.Tabs == 0
-    
-    -- Scrollbar styling
-    local scrollbar = Instance.new("UIGradient")
-    scrollbar.Parent = tabFrame
-    scrollbar.Color = ColorSequence.new(Color3.fromRGB(0, 120, 200))
-    
-    tabButton.MouseButton1Click:Connect(function()
-        for _, btn in pairs(window.Sidebar:GetChildren()) do
-            if btn:IsA("TextButton") then
-                btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-            end
-        end
-        for _, frame in pairs(window.ContentArea:GetChildren()) do
-            if frame:IsA("ScrollingFrame") then
-                frame.Visible = false
-            end
-        end
-        tabButton.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
-        tabFrame.Visible = true
-        window.CurrentTab = tabButton
-    end)
-    
-    local tab = {
-        Button = tabButton,
-        Frame = tabFrame,
-        Name = name,
-        Elements = {}
-    }
-    
-    table.insert(window.Tabs, tab)
-    return tab
-end
-
-function RaflyedUI:CreateSection(tab, name)
-    local section = Instance.new("Frame")
-    section.Name = name.."Section"
-    section.Parent = tab.Frame
-    section.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    section.BorderSizePixel = 0
-    section.Size = UDim2.new(1, -20, 0, 0)
-    section.Position = UDim2.new(0, 10, 0, #tab.Elements * 5 + 5)
-    section.AutomaticSize = Enum.AutomaticSize.Y
-    
-    -- Section Title
     local title = Instance.new("TextLabel")
-    title.Name = "Title"
-    title.Parent = section
-    title.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    title.Parent = frame
+    title.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     title.BorderSizePixel = 0
-    title.Size = UDim2.new(1, 0, 0, 25)
+    title.Size = UDim2.new(1, 0, 0, 30)
     title.Font = Enum.Font.GothamBold
-    title.Text = name
+    title.Text = "RYEENZY EXPLOIT (Fallback Mode)"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.TextSize = 14
     
-    -- Content Container
-    local content = Instance.new("Frame")
-    content.Name = "Content"
-    content.Parent = section
-    content.BackgroundTransparency = 1
-    content.Position = UDim2.new(0, 5, 0, 30)
-    content.Size = UDim2.new(1, -10, 0, 0)
-    content.AutomaticSize = Enum.AutomaticSize.Y
-    
-    table.insert(tab.Elements, section)
-    return content
+    print("⚠️ Scoot UI Window gagal, menggunakan fallback GUI")
+    return
 end
 
-function RaflyedUI:CreateToggle(parent, text, default, callback)
-    local toggleFrame = Instance.new("Frame")
-    toggleFrame.Name = text.."Toggle"
-    toggleFrame.Parent = parent
-    toggleFrame.BackgroundTransparency = 1
-    toggleFrame.Size = UDim2.new(1, 0, 0, 30)
-    toggleFrame.Position = UDim2.new(0, 0, 0, #parent:GetChildren() * 30 - 30)
-    
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Name = "ToggleButton"
-    toggleBtn.Parent = toggleFrame
-    toggleBtn.BackgroundColor3 = default and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 70)
-    toggleBtn.BorderSizePixel = 0
-    toggleBtn.Position = UDim2.new(0, 5, 0, 5)
-    toggleBtn.Size = UDim2.new(0, 20, 0, 20)
-    toggleBtn.Text = ""
-    
-    local toggleLabel = Instance.new("TextLabel")
-    toggleLabel.Name = "ToggleLabel"
-    toggleLabel.Parent = toggleFrame
-    toggleLabel.BackgroundTransparency = 1
-    toggleLabel.Position = UDim2.new(0, 30, 0, 0)
-    toggleLabel.Size = UDim2.new(1, -35, 1, 0)
-    toggleLabel.Font = Enum.Font.Gotham
-    toggleLabel.Text = text
-    toggleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    toggleLabel.TextSize = 13
-    toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local state = default or false
-    if callback then callback(state) end
-    
-    toggleBtn.MouseButton1Click:Connect(function()
-        state = not state
-        toggleBtn.BackgroundColor3 = state and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 70)
-        if callback then callback(state) end
-    end)
-    
-    return toggleFrame
-end
+-- ==================================================
+-- MEMBUAT TAB-TAB UTAMA
+-- ==================================================
+local TabMain = Window:CreateTab({
+    Name = "Main",
+    Icon = "rbxassetid://6031068350" -- Ikon gear
+})
 
-function RaflyedUI:CreateButton(parent, text, callback)
-    local btn = Instance.new("TextButton")
-    btn.Name = text.."Button"
-    btn.Parent = parent
-    btn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
-    btn.BorderSizePixel = 0
-    btn.Size = UDim2.new(1, -10, 0, 30)
-    btn.Position = UDim2.new(0, 5, 0, #parent:GetChildren() * 35 - 35)
-    btn.Font = Enum.Font.Gotham
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
-    
-    btn.MouseButton1Click:Connect(function()
-        btn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        spawn(function()
-            wait(0.1)
-            btn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
-        end)
-        if callback then callback() end
-    end)
-    
-    return btn
-end
+local TabPlayer = Window:CreateTab({
+    Name = "Player",
+    Icon = "rbxassetid://6031075930" -- Ikon player
+})
 
-function RaflyedUI:CreateSlider(parent, text, min, max, default, callback)
-    local sliderFrame = Instance.new("Frame")
-    sliderFrame.Name = text.."Slider"
-    sliderFrame.Parent = parent
-    sliderFrame.BackgroundTransparency = 1
-    sliderFrame.Size = UDim2.new(1, 0, 0, 45)
-    sliderFrame.Position = UDim2.new(0, 0, 0, #parent:GetChildren() * 45 - 45)
-    
-    local label = Instance.new("TextLabel")
-    label.Name = "Label"
-    label.Parent = sliderFrame
-    label.BackgroundTransparency = 1
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.Font = Enum.Font.Gotham
-    label.Text = text .. ": " .. tostring(default or min)
-    label.TextColor3 = Color3.fromRGB(220, 220, 220)
-    label.TextSize = 13
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local sliderBg = Instance.new("Frame")
-    sliderBg.Name = "SliderBg"
-    sliderBg.Parent = sliderFrame
-    sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    sliderBg.BorderSizePixel = 0
-    sliderBg.Position = UDim2.new(0, 0, 0, 25)
-    sliderBg.Size = UDim2.new(1, 0, 0, 10)
-    
-    local sliderFill = Instance.new("Frame")
-    sliderFill.Name = "SliderFill"
-    sliderFill.Parent = sliderBg
-    sliderFill.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
-    sliderFill.BorderSizePixel = 0
-    sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    
-    local sliderButton = Instance.new("TextButton")
-    sliderButton.Name = "SliderButton"
-    sliderButton.Parent = sliderBg
-    sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    sliderButton.BorderSizePixel = 0
-    sliderButton.Position = UDim2.new((default - min) / (max - min), -5, 0, -2)
-    sliderButton.Size = UDim2.new(0, 14, 0, 14)
-    sliderButton.Text = ""
-    sliderButton.ZIndex = 2
-    
-    local value = default or min
-    
-    local function updateSlider(input)
-        local pos = input.Position.X
-        local sliderPos = sliderBg.AbsolutePosition.X
-        local sliderSize = sliderBg.AbsoluteSize.X
-        
-        local relativePos = math.clamp((pos - sliderPos) / sliderSize, 0, 1)
-        value = min + (relativePos * (max - min))
-        value = math.floor(value * 10) / 10
-        
-        sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
-        sliderButton.Position = UDim2.new(relativePos, -5, 0, -2)
-        label.Text = text .. ": " .. tostring(value)
-        
-        if callback then callback(value) end
+local TabCombat = Window:CreateTab({
+    Name = "Combat",
+    Icon = "rbxassetid://6031083096" -- Ikon pedang
+})
+
+local TabVisual = Window:CreateTab({
+    Name = "Visuals",
+    Icon = "rbxassetid://6031091635" -- Ikon mata
+})
+
+local TabMisc = Window:CreateTab({
+    Name = "Misc",
+    Icon = "rbxassetid://6031097357" -- Ikon lainnya
+})
+
+-- ==================================================
+-- SECTION: MAIN TAB
+-- ==================================================
+local MainSection1 = TabMain:CreateSection("Auto Farm")
+local MainSection2 = TabMain:CreateSection("Auto Collect")
+local MainSection3 = TabMain:CreateSection("Auto Sell")
+
+-- Variabel global untuk kontrol fitur
+_G.RYEENZY = {
+    AutoFarm = false,
+    AutoCollect = false,
+    AutoSell = false,
+    WalkSpeed = 16,
+    JumpPower = 50,
+    InfiniteJump = false,
+    Aimbot = false,
+    ESP = false,
+    Fullbright = false,
+    Noclip = false
+}
+
+-- Auto Farm Toggle
+MainSection1:Toggle({
+    Name = "Auto Farm",
+    Description = "Otomatis menyerang musuh terdekat",
+    Flag = "AutoFarm",
+    Default = false,
+    Callback = function(state)
+        _G.RYEENZY.AutoFarm = state
+        if state then
+            spawn(function()
+                while _G.RYEENZY.AutoFarm and Window.Visible do
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            -- Cari musuh terdekat
+                            local nearestEnemy = nil
+                            local nearestDist = math.huge
+                            
+                            for _, v in pairs(workspace:GetDescendants()) do
+                                if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
+                                    if v ~= player.Character and v.Humanoid.Health > 0 then
+                                        local dist = (v.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                                        if dist < nearestDist then
+                                            nearestDist = dist
+                                            nearestEnemy = v
+                                        end
+                                    end
+                                end
+                            end
+                            
+                            if nearestEnemy then
+                                player.Character.HumanoidRootPart.CFrame = nearestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+                                -- Simulasi serangan
+                                if player.Character:FindFirstChildOfClass("Tool") then
+                                    local tool = player.Character:FindFirstChildOfClass("Tool")
+                                    tool:Activate()
+                                end
+                            end
+                        end
+                    end)
+                    wait(1.5)
+                end
+            end)
+        end
     end
-    
-    sliderButton.MouseButton1Down:Connect(function()
-        local connection
-        connection = userInput.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                updateSlider(input)
-            end
-        end)
-        
-        userInput.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                if connection then connection:Disconnect() end
-            end
-        end)
-    end)
-    
-    return sliderFrame
-end
+})
 
-function RaflyedUI:CreateDropdown(parent, text, options, default, callback)
-    local dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Name = text.."Dropdown"
-    dropdownFrame.Parent = parent
-    dropdownFrame.BackgroundTransparency = 1
-    dropdownFrame.Size = UDim2.new(1, 0, 0, 35)
-    dropdownFrame.Position = UDim2.new(0, 0, 0, #parent:GetChildren() * 35 - 35)
-    
-    local btn = Instance.new("TextButton")
-    btn.Name = "DropdownButton"
-    btn.Parent = dropdownFrame
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    btn.BorderSizePixel = 0
-    btn.Size = UDim2.new(1, -10, 0, 25)
-    btn.Position = UDim2.new(0, 5, 0, 5)
-    btn.Font = Enum.Font.Gotham
-    btn.Text = text .. ": " .. (default or options[1] or "None")
-    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
-    btn.TextSize = 13
-    
-    local expanded = false
-    local dropdownList = Instance.new("Frame")
-    dropdownList.Name = "DropdownList"
-    dropdownList.Parent = dropdownFrame
-    dropdownList.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    dropdownList.BorderSizePixel = 0
-    dropdownList.Position = UDim2.new(0, 5, 0, 35)
-    dropdownList.Size = UDim2.new(1, -10, 0, 0)
-    dropdownList.Visible = false
-    dropdownList.ClipsDescendants = true
-    dropdownList.AutomaticSize = Enum.AutomaticSize.Y
-    
-    local selected = default or options[1]
-    
-    btn.MouseButton1Click:Connect(function()
-        expanded = not expanded
-        dropdownList.Visible = expanded
-    end)
-    
-    for _, option in ipairs(options) do
-        local optionBtn = Instance.new("TextButton")
-        optionBtn.Name = option.."Option"
-        optionBtn.Parent = dropdownList
-        optionBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-        optionBtn.BorderSizePixel = 0
-        optionBtn.Size = UDim2.new(1, 0, 0, 25)
-        optionBtn.Position = UDim2.new(0, 0, 0, (#dropdownList:GetChildren() - 1) * 25)
-        optionBtn.Font = Enum.Font.Gotham
-        optionBtn.Text = option
-        optionBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-        optionBtn.TextSize = 12
-        
-        optionBtn.MouseButton1Click:Connect(function()
-            selected = option
-            btn.Text = text .. ": " .. option
-            dropdownList.Visible = false
-            expanded = false
-            if callback then callback(option) end
-        end)
+-- Slider Kecepatan Farm
+MainSection1:Slider({
+    Name = "Farm Interval",
+    Description = "Kecepatan loop auto farm (detik)",
+    Min = 0.5,
+    Max = 5,
+    Default = 1.5,
+    Flag = "FarmSpeed",
+    Callback = function(value)
+        _G.RYEENZY.FarmSpeed = value
     end
-    
-    return dropdownFrame
-end
+})
 
---=================================--
---      THE FORGE FEATURES         --
---=================================--
+-- Auto Collect Toggle
+MainSection2:Toggle({
+    Name = "Auto Collect",
+    Description = "Otomatis mengumpulkan item/drop",
+    Flag = "AutoCollect",
+    Default = false,
+    Callback = function(state)
+        _G.RYEENZY.AutoCollect = state
+        if state then
+            spawn(function()
+                while _G.RYEENZY.AutoCollect and Window.Visible do
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            -- Cari item yang bisa dikoleksi
+                            for _, v in pairs(workspace:GetDescendants()) do
+                                if v:IsA("Part") and (v.Name:lower():find("ore") or v.Name:lower():find("drop") or v.Name:lower():find("item")) then
+                                    if (v.Position - player.Character.HumanoidRootPart.Position).Magnitude < 50 then
+                                        player.Character.HumanoidRootPart.CFrame = v.CFrame + Vector3.new(0, 3, 0)
+                                        wait(0.3)
+                                        -- Simulasi collect (trigger proximity prompt jika ada)
+                                        if v:FindFirstChildOfClass("ProximityPrompt") then
+                                            fireproximityprompt(v:FindFirstChildOfClass("ProximityPrompt"))
+                                        end
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                    wait(2)
+                end
+            end)
+        end
+    end
+})
 
--- Create main window
-local window = RaflyedUI:CreateWindow("THE FORGE", "Raflyed UI Edition")
+-- Auto Sell Toggle
+MainSection3:Toggle({
+    Name = "Auto Sell",
+    Description = "Otomatis menjual item ke NPC",
+    Flag = "AutoSell",
+    Default = false,
+    Callback = function(state)
+        _G.RYEENZY.AutoSell = state
+        if state then
+            spawn(function()
+                while _G.RYEENZY.AutoSell and Window.Visible do
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        if player:FindFirstChild("PlayerGui") then
+                            -- Cari tombol jual di GUI
+                            for _, v in pairs(player.PlayerGui:GetDescendants()) do
+                                if v:IsA("TextButton") then
+                                    local text = v.Text:lower()
+                                    if text == "sell" or text:find("jual") or text:find("sell") then
+                                        v:Click()
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                    wait(3)
+                end
+            end)
+        end
+    end
+})
 
--- Create tabs
-local mainTab = RaflyedUI:CreateTab(window, "Main", "⚙️")
-local playerTab = RaflyedUI:CreateTab(window, "Player", "👤")
-local combatTab = RaflyedUI:CreateTab(window, "Combat", "⚔️")
-local worldTab = RaflyedUI:CreateTab(window, "World", "🌍")
-local visualTab = RaflyedUI:CreateTab(window, "Visuals", "👁️")
-local miscTab = RaflyedUI:CreateTab(window, "Misc", "🎮")
+-- ==================================================
+-- SECTION: PLAYER TAB
+-- ==================================================
+local PlayerSection = TabPlayer:CreateSection("Player Modifications")
 
--- Main Tab Sections
-local mainSection = RaflyedUI:CreateSection(mainTab, "Core Features")
-local autoSection = RaflyedUI:CreateSection(mainTab, "Automation")
+-- Slider WalkSpeed
+PlayerSection:Slider({
+    Name = "WalkSpeed",
+    Description = "Atur kecepatan jalan",
+    Min = 16,
+    Max = 200,
+    Default = 16,
+    Flag = "WalkSpeed",
+    Callback = function(value)
+        _G.RYEENZY.WalkSpeed = value
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = value
+        end
+    end
+})
 
--- Core Features
-RaflyedUI:CreateToggle(mainSection, "Auto Farm", false, function(state)
-    _G.AutoFarm = state
-    if state then
+-- Slider JumpPower
+PlayerSection:Slider({
+    Name = "JumpPower",
+    Description = "Atur kekuatan lompat",
+    Min = 50,
+    Max = 200,
+    Default = 50,
+    Flag = "JumpPower",
+    Callback = function(value)
+        _G.RYEENZY.JumpPower = value
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            player.Character.Humanoid.JumpPower = value
+        end
+    end
+})
+
+-- Toggle Infinite Jump
+PlayerSection:Toggle({
+    Name = "Infinite Jump",
+    Description = "Lompat tanpa batas",
+    Flag = "InfiniteJump",
+    Default = false,
+    Callback = function(state)
+        _G.RYEENZY.InfiniteJump = state
+        local UIS = game:GetService("UserInputService")
+        
+        if state then
+            if _G.InfJumpConnection then
+                _G.InfJumpConnection:Disconnect()
+            end
+            _G.InfJumpConnection = UIS.JumpRequest:Connect(function()
+                if _G.RYEENZY.InfiniteJump and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                    game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end)
+        else
+            if _G.InfJumpConnection then
+                _G.InfJumpConnection:Disconnect()
+                _G.InfJumpConnection = nil
+            end
+        end
+    end
+})
+
+-- Toggle Noclip
+PlayerSection:Toggle({
+    Name = "Noclip",
+    Description = "Tembus dinding",
+    Flag = "Noclip",
+    Default = false,
+    Callback = function(state)
+        _G.RYEENZY.Noclip = state
         spawn(function()
-            while _G.AutoFarm and window.ScreenGui.Parent do
+            while _G.RYEENZY.Noclip and Window.Visible do
                 pcall(function()
-                    -- Auto farm logic for The Forge
-                    local character = localPlayer.Character
-                    if character and character:FindFirstChild("HumanoidRootPart") then
-                        -- Find nearest enemy or resource
-                        for _, v in pairs(workspace:GetDescendants()) do
-                            if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
-                                if v ~= character and v.Humanoid.Health > 0 then
-                                    character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
-                                    wait(0.5)
-                                    break
+                    local player = game.Players.LocalPlayer
+                    if player.Character then
+                        for _, v in pairs(player.Character:GetDescendants()) do
+                            if v:IsA("BasePart") and v.CanCollide then
+                                v.CanCollide = false
+                            end
+                        end
+                    end
+                end)
+                wait(0.1)
+            end
+        end)
+    end
+})
+
+-- Tombol Teleport ke Spawn
+PlayerSection:Button({
+    Name = "Teleport to Spawn",
+    Description = "Teleport ke titik spawn",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
+        end
+    end
+})
+
+-- ==================================================
+-- SECTION: COMBAT TAB
+-- ==================================================
+local CombatSection = TabCombat:CreateSection("Combat Options")
+
+-- Toggle Aimbot
+CombatSection:Toggle({
+    Name = "Aimbot",
+    Description = "Aktifkan aimbot (Lock target)",
+    Flag = "Aimbot",
+    Default = false,
+    Callback = function(state)
+        _G.RYEENZY.Aimbot = state
+    end
+})
+
+-- Slider Aimbot FOV
+CombatSection:Slider({
+    Name = "Aimbot FOV",
+    Description = "Field of View untuk aimbot",
+    Min = 50,
+    Max = 500,
+    Default = 150,
+    Flag = "AimbotFOV",
+    Callback = function(value)
+        _G.RYEENZY.AimbotFOV = value
+    end
+})
+
+-- Dropdown untuk memilih bagian tubuh
+CombatSection:Dropdown({
+    Name = "Aimbot Part",
+    Description = "Target bagian tubuh",
+    Options = {"Head", "Torso", "HumanoidRootPart", "Left Arm", "Right Arm", "Left Leg", "Right Leg"},
+    Default = "Head",
+    Flag = "AimbotPart",
+    Callback = function(option)
+        _G.RYEENZY.AimbotPart = option
+    end
+})
+
+-- Tombol Instant Kill (simulasi)
+CombatSection:Button({
+    Name = "Instant Kill (Test)",
+    Description = "Set damage tool menjadi besar",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChildOfClass("Tool") then
+            local tool = player.Character:FindFirstChildOfClass("Tool")
+            -- Cari value damage
+            for _, v in pairs(tool:GetDescendants()) do
+                if v:IsA("NumberValue") and (v.Name:lower():find("damage") or v.Name:lower():find("dmg")) then
+                    v.Value = 999999
+                    Library:Notify("Damage set ke 999999!", 2)
+                    return
+                end
+            end
+            Library:Notify("Tidak menemukan value damage!", 2)
+        else
+            Library:Notify("Tidak ada tool di tangan!", 2)
+        end
+    end
+})
+
+-- ==================================================
+-- SECTION: VISUALS TAB
+-- ==================================================
+local VisualSection = TabVisual:CreateSection("ESP Settings")
+
+-- Toggle ESP
+VisualSection:Toggle({
+    Name = "ESP Players",
+    Description = "Lihat player melalui dinding",
+    Flag = "ESP",
+    Default = false,
+    Callback = function(state)
+        _G.RYEENZY.ESP = state
+        if state then
+            spawn(function()
+                while _G.RYEENZY.ESP and Window.Visible do
+                    pcall(function()
+                        for _, v in pairs(game.Players:GetPlayers()) do
+                            if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
+                                if not v.Character.Head:FindFirstChild("RYEENZY_ESP") then
+                                    local bill = Instance.new("BillboardGui")
+                                    bill.Name = "RYEENZY_ESP"
+                                    bill.Parent = v.Character.Head
+                                    bill.AlwaysOnTop = true
+                                    bill.Size = UDim2.new(0, 150, 0, 40)
+                                    bill.StudsOffset = Vector3.new(0, 2, 0)
+                                    
+                                    local bg = Instance.new("Frame")
+                                    bg.Parent = bill
+                                    bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                                    bg.BackgroundTransparency = 0.3
+                                    bg.Size = UDim2.new(1, 0, 1, 0)
+                                    
+                                    local nameLabel = Instance.new("TextLabel")
+                                    nameLabel.Parent = bg
+                                    nameLabel.BackgroundTransparency = 1
+                                    nameLabel.Size = UDim2.new(1, 0, 0.6, 0)
+                                    nameLabel.Font = Enum.Font.GothamBold
+                                    nameLabel.Text = v.Name
+                                    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                    nameLabel.TextSize = 14
+                                    
+                                    local distLabel = Instance.new("TextLabel")
+                                    distLabel.Parent = bg
+                                    distLabel.BackgroundTransparency = 1
+                                    distLabel.Position = UDim2.new(0, 0, 0.6, 0)
+                                    distLabel.Size = UDim2.new(1, 0, 0.4, 0)
+                                    distLabel.Font = Enum.Font.Gotham
+                                    distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                                    distLabel.TextSize = 10
+                                    
+                                    -- Update jarak setiap saat
+                                    spawn(function()
+                                        while _G.RYEENZY.ESP and bill and bill.Parent do
+                                            if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                                local dist = (v.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                                                distLabel.Text = string.format("%.1f studs", dist)
+                                            end
+                                            wait(0.5)
+                                        end
+                                    end)
+                                end
+                            end
+                        end
+                    end)
+                    wait(1)
+                end
+                -- Hapus semua ESP saat dimatikan
+                for _, v in pairs(game.Players:GetPlayers()) do
+                    if v.Character and v.Character:FindFirstChild("Head") and v.Character.Head:FindFirstChild("RYEENZY_ESP") then
+                        v.Character.Head.RYEENZY_ESP:Destroy()
+                    end
+                end
+            end)
+        else
+            for _, v in pairs(game.Players:GetPlayers()) do
+                if v.Character and v.Character:FindFirstChild("Head") and v.Character.Head:FindFirstChild("RYEENZY_ESP") then
+                    v.Character.Head.RYEENZY_ESP:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- Toggle Fullbright
+VisualSection:Toggle({
+    Name = "Fullbright",
+    Description = "Terang total",
+    Flag = "Fullbright",
+    Default = false,
+    Callback = function(state)
+        _G.RYEENZY.Fullbright = state
+        if state then
+            game:GetService("Lighting").Brightness = 2
+            game:GetService("Lighting").GlobalShadows = false
+            game:GetService("Lighting").FogEnd = 100000
+        else
+            game:GetService("Lighting").Brightness = 1
+            game:GetService("Lighting").GlobalShadows = true
+            game:GetService("Lighting").FogEnd = 1000
+        end
+    end
+})
+
+-- ==================================================
+-- SECTION: MISC TAB
+-- ==================================================
+local MiscSection = TabMisc:CreateSection("Utilities")
+
+-- Tombol Rejoin
+MiscSection:Button({
+    Name = "Rejoin Game",
+    Description = "Masuk ulang ke server yang sama",
+    Callback = function()
+        local ts = game:GetService("TeleportService")
+        ts:Teleport(game.PlaceId, game.Players.LocalPlayer)
+    end
+})
+
+-- Tombol Server Hop
+MiscSection:Button({
+    Name = "Server Hop",
+    Description = "Pindah ke server lain",
+    Callback = function()
+        Library:Notify("Mencari server lain...", 2)
+        -- Implementasi server hop sederhana
+        local placeId = game.PlaceId
+        local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?limit=10"
+        local success, response = pcall(function()
+            return game:HttpGet(url)
+        end)
+        
+        if success and response then
+            -- Parse JSON sederhana (tanpa library JSON)
+            Library:Notify("Server hop dalam pengembangan!", 2)
+        end
+    end
+})
+
+-- Tombol Copy Telegram
+MiscSection:Button({
+    Name = "📱 Telegram",
+    Description = "Copy link Telegram",
+    Callback = function()
+        if setclipboard then
+            setclipboard("t.me/Swill_Way")
+            Library:Notify("Telegram link copied!", 1)
+        else
+            Library:Notify("Executor tidak mendukung setclipboard", 2)
+        end
+    end
+})
+
+-- Tombol Destroy GUI
+MiscSection:Button({
+    Name = "Destroy GUI",
+    Description = "Hapus GUI dari layar",
+    Callback = function()
+        Library:Unload()
+    end
+})
+
+-- ==================================================
+-- NOTIFIKASI STARTUP
+-- ==================================================
+task.wait(1)
+Library:Notify("✅ RYEENZY EXPLOIT Loaded! Join Telegram: t.me/Swill_Way", 5)
+
+print([[
+=================================
+   RYEENZY EXPLOIT - Scoot UI
+   Telegram: t.me/Swill_Way
+   Load Time: ]] .. os.clock() .. [[ seconds
+=================================
+]])
+
+-- ==================================================
+-- LOOP UNTUK AIMBOT (SEDERHANA)
+-- ==================================================
+spawn(function()
+    while Window.Visible do
+        if _G.RYEENZY.Aimbot then
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and camera then
+                    local closestTarget = nil
+                    local closestDist = _G.RYEENZY.AimbotFOV or 150
+                    
+                    for _, v in pairs(game.Players:GetPlayers()) do
+                        if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChildOfClass("Humanoid") and v.Character.Humanoid.Health > 0 then
+                            local screenPos, onScreen = camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
+                            if onScreen then
+                                local dist = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                                if dist < closestDist then
+                                    closestDist = dist
+                                    closestTarget = v
                                 end
                             end
                         end
                     end
-                end)
-                wait(2)
-            end
-        end)
-    end
-end)
-
-RaflyedUI:CreateToggle(mainSection, "Auto Collect", false, function(state)
-    _G.AutoCollect = state
-    if state then
-        spawn(function()
-            while _G.AutoCollect and window.ScreenGui.Parent do
-                pcall(function()
-                    for _, v in pairs(workspace:GetDescendants()) do
-                        if v:IsA("Part") and v.Name:lower():find("ore") or v.Name:lower():find("resource") then
-                            if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                                localPlayer.Character.HumanoidRootPart.CFrame = v.CFrame + Vector3.new(0, 3, 0)
-                                wait(0.3)
-                                fireproximityprompt and fireproximityprompt(v:FindFirstChildOfClass("ProximityPrompt"))
-                            end
-                        end
-                    end
-                end)
-                wait(1)
-            end
-        end)
-    end
-end)
-
-RaflyedUI:CreateToggle(autoSection, "Auto Sell", false, function(state)
-    _G.AutoSell = state
-    if state then
-        spawn(function()
-            while _G.AutoSell and window.ScreenGui.Parent do
-                pcall(function()
-                    if localPlayer:FindFirstChild("PlayerGui") then
-                        for _, v in pairs(localPlayer.PlayerGui:GetDescendants()) do
-                            if v:IsA("TextButton") and (v.Text:lower() == "sell" or v.Name:lower() == "sellbutton") then
-                                v:Click()
-                                break
-                            end
-                        end
-                    end
-                end)
-                wait(3)
-            end
-        end)
-    end
-end)
-
-RaflyedUI:CreateToggle(autoSection, "Auto Upgrade", false, function(state)
-    _G.AutoUpgrade = state
-end)
-
--- Player Tab
-local playerSection = RaflyedUI:CreateSection(playerTab, "Player Settings")
-
-RaflyedUI:CreateSlider(playerSection, "Walk Speed", 16, 100, 16, function(value)
-    if localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        localPlayer.Character.Humanoid.WalkSpeed = value
-    end
-end)
-
-RaflyedUI:CreateSlider(playerSection, "Jump Power", 50, 200, 50, function(value)
-    if localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        localPlayer.Character.Humanoid.JumpPower = value
-    end
-end)
-
-RaflyedUI:CreateToggle(playerSection, "Infinite Jump", false, function(state)
-    _G.InfiniteJump = state
-    if state then
-        local jumper
-        jumper = userInput.JumpRequest:Connect(function()
-            if _G.InfiniteJump and localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                localPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
-        end)
-        if not state and jumper then jumper:Disconnect() end
-    end
-end)
-
-RaflyedUI:CreateToggle(playerSection, "Noclip", false, function(state)
-    _G.Noclip = state
-    spawn(function()
-        while _G.Noclip and window.ScreenGui.Parent do
-            pcall(function()
-                if localPlayer.Character then
-                    for _, v in pairs(localPlayer.Character:GetDescendants()) do
-                        if v:IsA("BasePart") and v.CanCollide then
-                            v.CanCollide = false
+                    
+                    if closestTarget and closestTarget.Character and closestTarget.Character:FindFirstChild(_G.RYEENZY.AimbotPart or "Head") then
+                        local targetPart = closestTarget.Character[_G.RYEENZY.AimbotPart or "Head"]
+                        if targetPart then
+                            -- Aim ke target
+                            camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
                         end
                     end
                 end
             end)
-            wait(0.1)
         end
-    end)
-end)
-
--- Combat Tab
-local combatSection = RaflyedUI:CreateSection(combatTab, "Combat Features")
-
-RaflyedUI:CreateToggle(combatSection, "Aimbot", false, function(state)
-    _G.Aimbot = state
-end)
-
-RaflyedUI:CreateToggle(combatSection, "Silent Aim", false, function(state)
-    _G.SilentAim = state
-end)
-
-RaflyedUI:CreateSlider(combatSection, "Aimbot FOV", 10, 500, 150, function(value)
-    _G.AimbotFOV = value
-end)
-
-RaflyedUI:CreateDropdown(combatSection, "Aimbot Part", {"Head", "Torso", "HumanoidRootPart"}, "Head", function(option)
-    _G.AimbotPart = option
-end)
-
-RaflyedUI:CreateToggle(combatSection, "Instant Kill", false, function(state)
-    _G.InstantKill = state
-end)
-
--- World Tab
-local worldSection = RaflyedUI:CreateSection(worldTab, "World Settings")
-
-RaflyedUI:CreateToggle(worldSection, "Fullbright", false, function(state)
-    _G.Fullbright = state
-    if state then
-        game:GetService("Lighting").Brightness = 2
-        game:GetService("Lighting").FogEnd = 100000
-        game:GetService("Lighting").GlobalShadows = false
-    else
-        game:GetService("Lighting").Brightness = 1
-        game:GetService("Lighting").GlobalShadows = true
+        wait()
     end
 end)
-
-RaflyedUI:CreateButton(worldSection, "Teleport to Spawn", function()
-    if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        localPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
-    end
-end)
-
-RaflyedUI:CreateToggle(worldSection, "No Fog", false, function(state)
-    if state then
-        game:GetService("Lighting").FogEnd = 100000
-    else
-        game:GetService("Lighting").FogEnd = 1000
-    end
-end)
-
--- Visuals Tab
-local visualSection = RaflyedUI:CreateSection(visualTab, "Visual Enhancements")
-local espSection = RaflyedUI:CreateSection(visualTab, "ESP Settings")
-
-RaflyedUI:CreateToggle(visualSection, "ESP Players", false, function(state)
-    _G.PlayerESP = state
-    -- ESP implementation would go here
-end)
-
-RaflyedUI:CreateToggle(visualSection, "ESP Mobs", false, function(state)
-    _G.MobESP = state
-end)
-
-RaflyedUI:CreateToggle(visualSection, "ESP Ores", false, function(state)
-    _G.OreESP = state
-end)
-
-RaflyedUI:CreateToggle(visualSection, "ESP Chests", false, function(state)
-    _G.ChestESP = state
-end)
-
-RaflyedUI:CreateButton(visualSection, "Refresh ESP", function()
-    print("ESP Refreshed")
-end)
-
--- Misc Tab
-local miscSection = RaflyedUI:CreateSection(miscTab, "Miscellaneous")
-local creditsSection = RaflyedUI:CreateSection(miscTab, "Credits")
-
-RaflyedUI:CreateButton(miscSection, "Rejoin Game", function()
-    local ts = game:GetService("TeleportService")
-    local p = localPlayer
-    ts:Teleport(game.PlaceId, p)
-end)
-
-RaflyedUI:CreateButton(miscSection, "Server Hop", function()
-    local ts = game:GetService("TeleportService")
-    local p = localPlayer
-    local np = p:GetJoinData().LastJoined
-    ts:TeleportToPlaceInstance(game.PlaceId, np, p)
-end)
-
-RaflyedUI:CreateSlider(miscSection, "Game Speed", 0.5, 5, 1, function(value)
-    game:GetService("RunService"):Set3dRenderingEnabled(true)
-    setfpscap and setfpscap(60 * value)
-end)
-
--- Credits
-local creditLabel = Instance.new("TextLabel")
-creditLabel.Parent = creditsSection
-creditLabel.BackgroundTransparency = 1
-creditLabel.Size = UDim2.new(1, 0, 0, 25)
-creditLabel.Font = Enum.Font.Gotham
-creditLabel.Text = "THE FORGE - Raflyed UI Edition"
-creditLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
-creditLabel.TextSize = 14
-
-local creditLabel2 = Instance.new("TextLabel")
-creditLabel2.Parent = creditsSection
-creditLabel2.BackgroundTransparency = 1
-creditLabel2.Size = UDim2.new(1, 0, 0, 20)
-creditLabel2.Font = Enum.Font.Gotham
-creditLabel2.Text = "Made by: Swill Way Team"
-creditLabel2.TextColor3 = Color3.fromRGB(200, 200, 200)
-creditLabel2.TextSize = 12
-
-local creditLabel3 = Instance.new("TextLabel")
-creditLabel3.Parent = creditsSection
-creditLabel3.BackgroundTransparency = 1
-creditLabel3.Size = UDim2.new(1, 0, 0, 20)
-creditLabel3.Font = Enum.Font.Gotham
-creditLabel3.Text = "Telegram: t.me/Swill_Way"
-creditLabel3.TextColor3 = Color3.fromRGB(150, 150, 150)
-creditLabel3.TextSize = 10
-
--- Update canvas sizes
-spawn(function()
-    wait(1)
-    for _, tab in pairs(window.Tabs) do
-        local totalHeight = 10
-        for _, child in pairs(tab.Frame:GetChildren()) do
-            if child:IsA("Frame") then
-                totalHeight = totalHeight + child.AbsoluteSize.Y + 10
-            end
-        end
-        tab.Frame.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
-    end
-end)
-
--- Anti AFK
-spawn(function()
-    while window.ScreenGui.Parent do
-        wait(300)
-        if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
-            localPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-            wait(0.1)
-            localPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        end
-    end
-end)
-
-print("✅ THE FORGE - RAFLYED UI EDITION LOADED!")
-print("📱 Telegram: t.me/Swill_Way")
-print("🎯 GUI Ready - All Features Active")
