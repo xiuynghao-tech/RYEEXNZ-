@@ -1,0 +1,27 @@
+-- Loader untuk RYEEXNZ
+-- Ganti URL di bawah dengan URL repository Anda
+local scriptURL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/RYEEXNZ.lua"
+
+local function loadRYEEXNZ()
+    local success, result = pcall(function()
+        return game:HttpGet(scriptURL)
+    end)
+    
+    if success and result then
+        local loadSuccess, scriptError = pcall(loadstring, result)
+        if loadSuccess and scriptError then
+            scriptError()
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "RYEEXNZ",
+                Text = "Loaded successfully!",
+                Duration = 3
+            })
+        else
+            warn("RYEEXNZ Load Error: " .. tostring(scriptError))
+        end
+    else
+        warn("RYEEXNZ Fetch Error: " .. tostring(result))
+    end
+end
+
+loadRYEEXNZ()
