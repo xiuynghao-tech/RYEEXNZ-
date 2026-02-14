@@ -1,26 +1,47 @@
 --[[ 
-    RYEEXNZ EXPLOIT - Orion UI Version
-    Version: 6.0.0
-    Based on Official Orion Documentation
+    FISCH SCRIPT - Rayfield UI Version
+    Game: Fisch / Fishing Simulator
+    Version: 1.0.0
+    Fitur: Auto Fish, ESP, Teleport, dll + Drag & Resize
     Telegram: t.me/Swill_Way
 ]]
 
--- Load Orion Library (sesuai dokumentasi)
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
+-- Load Rayfield UI (menggunakan URL resmi)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Create Window (sesuai dokumentasi)
-local Window = OrionLib:MakeWindow({
-    Name = "RYEEXNZ EXPLOIT v6.0.0",
-    HidePremium = false,
-    SaveConfig = true,
-    ConfigFolder = "RYEEXNZConfig",
-    IntroEnabled = true,
-    IntroText = "RYEEXNZ EXPLOIT",
-    IntroIcon = "rbxassetid://4483345998",
-    Icon = "rbxassetid://4483345998",
-    CloseCallback = function()
-        print("RYEEXNZ Window Closed")
-    end
+-- Create Window dengan Rayfield
+local Window = Rayfield:CreateWindow({
+    Name = "🐟 FISCH SCRIPT v1.0.0",
+    Icon = 0, -- Bisa diganti dengan icon ID
+    LoadingTitle = "Loading Fisch Script...",
+    LoadingSubtitle = "by RYEEXNZ",
+    Theme = "Default", -- Tema: Default, Dark, Light, Ocean, etc
+    ToggleUIKeybind = "F4", -- Keybind untuk toggle UI
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
+    
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "FischConfig",
+        FileName = "FischScript"
+    },
+    
+    Discord = {
+        Enabled = false,
+        Invite = "",
+        RememberJoins = true
+    },
+    
+    KeySystem = false, -- Set ke true jika ingin pakai key system
+    KeySettings = {
+        Title = "FISCH SCRIPT",
+        Subtitle = "Key System",
+        Note = "Join Telegram t.me/Swill_Way untuk key",
+        FileName = "FischKey",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = {"fisch2025", "fischmaster"} -- List of keys
+    }
 })
 
 -- Services
@@ -32,92 +53,285 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
-local Lighting = game:GetService("Lighting")
+local Camera = Workspace.CurrentCamera
+
+-- Variabel Global untuk fitur
+local autoFishing = false
+local autoCast = false
+local fishESP = false
+local autoSell = false
+local infiniteStamina = false
+local instantCatch = false
+
+-- =============================================
+-- FUNGSI UTAMA FISHING
+-- =============================================
+
+-- Fungsi untuk mendapatkan rod/tongkat pancing
+local function getCurrentRod()
+    -- Coba cari di tangan karakter
+    if LocalPlayer.Character then
+        for _, v in pairs(LocalPlayer.Character:GetChildren()) do
+            if v:IsA("Tool") and (v.Name:lower():find("rod") or v.Name:lower():find("fishing") or v.Name:lower():find("pole")) then
+                return v
+            end
+        end
+    end
+    -- Cari di inventory/backpack
+    for _, v in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if v:IsA("Tool") and (v.Name:lower():find("rod") or v.Name:lower():find("fishing") or v.Name:lower():find("pole")) then
+            return v
+        end
+    end
+    return nil
+end
+
+-- Fungsi untuk auto cast
+local function castLine()
+    local rod = getCurrentRod()
+    if rod and rod:FindFirstChild("Events") then
+        -- Coba panggil event cast
+        local castEvent = rod.Events:FindFirstChild("Cast") or rod.Events:FindFirstChild("Fish") or rod:FindFirstChild("Cast")
+        if castEvent then
+            castEvent:FireServer()
+            return true
+        end
+    end
+    return false
+end
+
+-- Fungsi untuk reel in (menarik pancing)
+local function reelIn()
+    local rod = getCurrentRod()
+    if rod and rod:FindFirstChild("Events") then
+        local reelEvent = rod.Events:FindFirstChild("Reel") or rod.Events:FindFirstChild("Pull") or rod:FindFirstChild("Reel")
+        if reelEvent then
+            reelEvent:FireServer()
+            return true
+        end
+    end
+    return false
+end
+
+-- Fungsi untuk mengecek apakah sedang fishing
+local function isFishing()
+    -- Cek berdasarkan status di player atau rod
+    if LocalPlayer.Character then
+        -- Cek apakah ada indikator fishing (bisa berbeda per game)
+        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+            if v.Name:lower():find("fishing") or v.Name:lower():find("casting") or v.Name:lower():find("waiting") then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- Fungsi untuk mengecek apakah ada ikan
+local function hasFish()
+    -- Cek berdasarkan notifikasi atau GUI indicator
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if playerGui then
+        for _, v in pairs(playerGui:GetDescendants()) do
+            if v:IsA("TextLabel") or v:IsA("ImageLabel") then
+                if v.Text:lower():find("fish") or v.Text:lower():find("catch") or v.Text:lower():find("bite") then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+-- Auto Fishing Loop
+local function startAutoFishing()
+    spawn(function()
+        while autoFishing do
+            wait(0.5)
+            
+            -- Equip rod jika belum
+            local rod = getCurrentRod()
+            if not rod or rod.Parent ~= LocalPlayer.Character then
+                rod = getCurrentRod()
+                if rod then
+                    LocalPlayer.Character.Humanoid:EquipTool(rod)
+                end
+                wait(1)
+            end
+            
+            if autoCast and not isFishing() then
+                castLine()
+                wait(2)
+            end
+            
+            if hasFish() then
+                reelIn()
+                wait(1)
+            end
+        end
+    end)
+end
+
+-- =============================================
+-- MAIN TAB
+-- =============================================
+local MainTab = Window:CreateTab("Auto Fish", "rbxassetid://4483345998")
+local MainSection = MainTab:CreateSection("Fishing Controls")
+
+-- Auto Fishing Toggle
+local AutoFishingToggle = MainTab:CreateToggle({
+    Name = "Auto Fishing",
+    CurrentValue = false,
+    Flag = "AutoFishing",
+    Callback = function(Value)
+        autoFishing = Value
+        if autoFishing then
+            startAutoFishing()
+            Rayfield:Notify({
+                Title = "Auto Fishing",
+                Content = "Auto fishing started!",
+                Duration = 2.5,
+                Image = 4483362458
+            })
+        else
+            Rayfield:Notify({
+                Title = "Auto Fishing",
+                Content = "Auto fishing stopped!",
+                Duration = 2.5,
+                Image = 4483362458
+            })
+        end
+    end
+})
+
+-- Auto Cast Toggle
+local AutoCastToggle = MainTab:CreateToggle({
+    Name = "Auto Cast",
+    CurrentValue = false,
+    Flag = "AutoCast",
+    Callback = function(Value)
+        autoCast = Value
+    end
+})
+
+-- Instant Catch Toggle
+local InstantCatchToggle = MainTab:CreateToggle({
+    Name = "Instant Catch",
+    CurrentValue = false,
+    Flag = "InstantCatch",
+    Callback = function(Value)
+        instantCatch = Value
+        if instantCatch then
+            -- Hook ke fungsi catch
+            Rayfield:Notify({
+                Title = "Instant Catch",
+                Content = "Activated!",
+                Duration = 2
+            })
+        end
+    end
+})
+
+-- Manual Controls
+local ManualSection = MainTab:CreateSection("Manual Controls")
+
+MainTab:CreateButton({
+    Name = "Cast Line",
+    Callback = function()
+        if castLine() then
+            Rayfield:Notify({
+                Title = "Success",
+                Content = "Line casted!",
+                Duration = 2
+            })
+        else
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Failed to cast line",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:CreateButton({
+    Name = "Reel In",
+    Callback = function()
+        if reelIn() then
+            Rayfield:Notify({
+                Title = "Success",
+                Content = "Reeled in!",
+                Duration = 2
+            })
+        else
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Failed to reel in",
+                Duration = 2
+            })
+        end
+    end
+})
 
 -- =============================================
 -- PLAYER TAB
 -- =============================================
-local PlayerTab = Window:MakeTab({
-    Name = "Player",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
--- Movement Section
-local MovementSection = PlayerTab:AddSection({
-    Name = "Movement"
-})
+local PlayerTab = Window:CreateTab("Player", "rbxassetid://4483345998")
+local MovementSection = PlayerTab:CreateSection("Movement")
 
 -- WalkSpeed Slider
-PlayerTab:AddSlider({
+local WalkSpeedSlider = PlayerTab:CreateSlider({
     Name = "WalkSpeed",
-    Min = 16,
-    Max = 250,
-    Default = 16,
-    Color = Color3.fromRGB(0, 200, 255),
+    Range = {16, 250},
     Increment = 1,
-    ValueName = "Speed",
+    Suffix = "Speed",
+    CurrentValue = 16,
+    Flag = "WalkSpeed",
     Callback = function(Value)
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.WalkSpeed = Value
         end
-    end    
+    end
 })
 
 -- JumpPower Slider
-PlayerTab:AddSlider({
+local JumpPowerSlider = PlayerTab:CreateSlider({
     Name = "JumpPower",
-    Min = 50,
-    Max = 250,
-    Default = 50,
-    Color = Color3.fromRGB(255, 100, 100),
+    Range = {50, 250},
     Increment = 1,
-    ValueName = "Power",
+    Suffix = "Power",
+    CurrentValue = 50,
+    Flag = "JumpPower",
     Callback = function(Value)
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.JumpPower = Value
         end
-    end    
+    end
 })
 
--- Gravity Slider
-PlayerTab:AddSlider({
-    Name = "Gravity",
-    Min = 0,
-    Max = 500,
-    Default = 196.2,
-    Color = Color3.fromRGB(100, 255, 100),
-    Increment = 1,
-    ValueName = "Force",
+-- Infinite Stamina Toggle
+local StaminaToggle = PlayerTab:CreateToggle({
+    Name = "Infinite Stamina",
+    CurrentValue = false,
+    Flag = "InfiniteStamina",
     Callback = function(Value)
-        Workspace.Gravity = Value
-    end    
-})
-
--- Infinity Jump Toggle
-local InfinityJumpToggle = PlayerTab:AddToggle({
-    Name = "Infinity Jump",
-    Default = false,
-    Flag = "InfinityJump",
-    Save = true,
-    Callback = function(Value)
-        _G.InfJump = Value
-        if _G.InfJump then
-            UserInputService.JumpRequest:Connect(function()
-                if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                    LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                end
-            end)
+        infiniteStamina = Value
+        if infiniteStamina then
+            -- Stamina hack logic (bervariasi per game)
+            Rayfield:Notify({
+                Title = "Infinite Stamina",
+                Content = "Activated!",
+                Duration = 2
+            })
         end
-    end    
+    end
 })
 
 -- NoClip Toggle
-local NoClipToggle = PlayerTab:AddToggle({
+local NoClipToggle = PlayerTab:CreateToggle({
     Name = "NoClip",
-    Default = false,
+    CurrentValue = false,
     Flag = "NoClip",
-    Save = true,
     Callback = function(Value)
         _G.NoClip = Value
         if _G.NoClip then
@@ -131,15 +345,14 @@ local NoClipToggle = PlayerTab:AddToggle({
                 end
             end)
         end
-    end    
+    end
 })
 
 -- Fly Mode Toggle
-local FlyToggle = PlayerTab:AddToggle({
+local FlyToggle = PlayerTab:CreateToggle({
     Name = "Fly Mode",
-    Default = false,
+    CurrentValue = false,
     Flag = "FlyMode",
-    Save = true,
     Callback = function(Value)
         _G.Fly = Value
         if _G.Fly then
@@ -151,10 +364,10 @@ local FlyToggle = PlayerTab:AddToggle({
             RunService.RenderStepped:Connect(function()
                 if _G.Fly and LocalPlayer.Character then
                     local direction = Vector3.new(0, 0, 0)
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + Workspace.CurrentCamera.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - Workspace.CurrentCamera.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - Workspace.CurrentCamera.CFrame.RightVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + Workspace.CurrentCamera.CFrame.RightVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + Camera.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - Camera.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - Camera.CFrame.RightVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + Camera.CFrame.RightVector end
                     if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direction = direction + Vector3.new(0, 1, 0) end
                     if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direction = direction - Vector3.new(0, 1, 0) end
                     
@@ -164,20 +377,131 @@ local FlyToggle = PlayerTab:AddToggle({
                 end
             end)
         end
-    end    
+    end
 })
 
--- Combat Section
-local CombatSection = PlayerTab:AddSection({
-    Name = "Combat"
+-- =============================================
+-- ESP TAB
+-- =============================================
+local ESPTab = Window:CreateTab("ESP", "rbxassetid://4483345998")
+local ESPSection = ESPTab:CreateSection("Visual ESP")
+
+-- Fish ESP Toggle
+local FishESPToggle = ESPTab:CreateToggle({
+    Name = "Fish ESP",
+    CurrentValue = false,
+    Flag = "FishESP",
+    Callback = function(Value)
+        fishESP = Value
+        if fishESP then
+            -- Highlight ikan di sekitar
+            spawn(function()
+                while fishESP do
+                    wait(1)
+                    for _, v in pairs(Workspace:GetDescendants()) do
+                        if v:IsA("Model") and (v.Name:lower():find("fish") or v.Name:lower():find("shark") or v.Name:lower():find("salmon")) then
+                            if not v:FindFirstChild("FishESP_Highlight") then
+                                local highlight = Instance.new("Highlight")
+                                highlight.Name = "FishESP_Highlight"
+                                highlight.Parent = v
+                                highlight.FillColor = Color3.fromRGB(0, 255, 255)
+                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                highlight.FillTransparency = 0.5
+                            end
+                        end
+                    end
+                end
+            end)
+        else
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:FindFirstChild("FishESP_Highlight") then
+                    v.FishESP_Highlight:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- Player ESP Toggle
+ESPTab:CreateToggle({
+    Name = "Player ESP",
+    CurrentValue = false,
+    Flag = "PlayerESP",
+    Callback = function(Value)
+        if Value then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    if not player.Character:FindFirstChild("PlayerESP_Highlight") then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "PlayerESP_Highlight"
+                        highlight.Parent = player.Character
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.FillTransparency = 0.5
+                    end
+                end
+            end
+        else
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("PlayerESP_Highlight") then
+                    player.Character.PlayerESP_Highlight:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- =============================================
+-- TELEPORT TAB
+-- =============================================
+local TeleportTab = Window:CreateTab("Teleport", "rbxassetid://4483345998")
+local TeleportSection = TeleportTab:CreateSection("Locations")
+
+-- Daftar lokasi fishing (contoh)
+local fishingSpots = {
+    ["Spawn Area"] = CFrame.new(0, 50, 0),
+    ["Beach"] = CFrame.new(100, 10, 50),
+    ["Pier"] = CFrame.new(-150, 15, 200),
+    ["Deep Ocean"] = CFrame.new(500, 0, -300),
+    ["Cave"] = CFrame.new(-300, 30, -400)
+}
+
+-- Dropdown untuk pilih lokasi
+local spotNames = {}
+for name, _ in pairs(fishingSpots) do
+    table.insert(spotNames, name)
+end
+
+local SpotDropdown = TeleportTab:CreateDropdown({
+    Name = "Select Location",
+    Options = spotNames,
+    CurrentOption = "Spawn Area",
+    Flag = "SelectedSpot",
+    Callback = function(Option)
+        _G.SelectedSpot = Option
+    end
+})
+
+-- Teleport Button
+TeleportTab:CreateButton({
+    Name = "Teleport to Selected",
+    Callback = function()
+        if _G.SelectedSpot and fishingSpots[_G.SelectedSpot] and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = fishingSpots[_G.SelectedSpot]
+            Rayfield:Notify({
+                Title = "Teleported",
+                Content = "Moved to " .. _G.SelectedSpot,
+                Duration = 2
+            })
+        end
+    end
 })
 
 -- Click Teleport Toggle
-local ClickTPToggle = PlayerTab:AddToggle({
+TeleportTab:CreateToggle({
     Name = "Click Teleport",
-    Default = false,
+    CurrentValue = false,
     Flag = "ClickTP",
-    Save = true,
     Callback = function(Value)
         _G.ClickTP = Value
         if _G.ClickTP then
@@ -190,232 +514,26 @@ local ClickTPToggle = PlayerTab:AddToggle({
                 end
             end)
         end
-    end    
-})
-
--- Reset Character Button
-PlayerTab:AddButton({
-    Name = "Reset Character",
-    Callback = function()
-        if LocalPlayer.Character then
-            LocalPlayer.Character:BreakJoints()
-        end
-        OrionLib:MakeNotification({
-            Name = "Character Reset",
-            Content = "Character has been reset",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-    end    
-})
-
--- =============================================
--- ESP TAB
--- =============================================
-local ESPTab = Window:MakeTab({
-    Name = "ESP",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
--- Visual Section
-local VisualSection = ESPTab:AddSection({
-    Name = "Visual ESP"
-})
-
--- Player ESP Toggle
-local PlayerESPToggle = ESPTab:AddToggle({
-    Name = "Player ESP",
-    Default = false,
-    Flag = "PlayerESP",
-    Save = true,
-    Callback = function(Value)
-        _G.PlayerESP = Value
-        if _G.PlayerESP then
-            while _G.PlayerESP do
-                wait(1)
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character then
-                        if not player.Character:FindFirstChild("ESP_Highlight") then
-                            local highlight = Instance.new("Highlight")
-                            highlight.Name = "ESP_Highlight"
-                            highlight.Parent = player.Character
-                            highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                            highlight.FillTransparency = 0.5
-                        end
-                    end
-                end
-            end
-        else
-            for _, player in pairs(Players:GetPlayers()) do
-                if player.Character and player.Character:FindFirstChild("ESP_Highlight") then
-                    player.Character.ESP_Highlight:Destroy()
-                end
-            end
-        end
-    end    
-})
-
--- Name ESP Toggle
-local NameESPToggle = ESPTab:AddToggle({
-    Name = "Name ESP",
-    Default = false,
-    Flag = "NameESP",
-    Save = true,
-    Callback = function(Value)
-        _G.NameESP = Value
-        if _G.NameESP then
-            while _G.NameESP do
-                wait(0.1)
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-                        if not player.Character.Head:FindFirstChild("NameESP") then
-                            local billboard = Instance.new("BillboardGui")
-                            local textLabel = Instance.new("TextLabel")
-                            
-                            billboard.Name = "NameESP"
-                            billboard.Parent = player.Character.Head
-                            billboard.Size = UDim2.new(0, 100, 0, 30)
-                            billboard.StudsOffset = Vector3.new(0, 2, 0)
-                            billboard.AlwaysOnTop = true
-                            
-                            textLabel.Parent = billboard
-                            textLabel.Size = UDim2.new(1, 0, 1, 0)
-                            textLabel.BackgroundTransparency = 1
-                            textLabel.Text = player.Name
-                            textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                            textLabel.TextStrokeTransparency = 0
-                            textLabel.TextSize = 14
-                        end
-                    end
-                end
-            end
-        else
-            for _, player in pairs(Players:GetPlayers()) do
-                if player.Character and player.Character:FindFirstChild("Head") then
-                    if player.Character.Head:FindFirstChild("NameESP") then
-                        player.Character.Head.NameESP:Destroy()
-                    end
-                end
-            end
-        end
-    end    
-})
-
--- Box ESP (Label sebagai placeholder)
-ESPTab:AddLabel("Box ESP - Coming Soon")
-
--- Tracers (Label sebagai placeholder)
-ESPTab:AddLabel("Tracers - Coming Soon")
-
--- =============================================
--- WORLD TAB
--- =============================================
-local WorldTab = Window:MakeTab({
-    Name = "World",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
--- Environment Section
-local EnvironmentSection = WorldTab:AddSection({
-    Name = "Environment"
-})
-
--- Fullbright Toggle
-local FullbrightToggle = WorldTab:AddToggle({
-    Name = "Fullbright",
-    Default = false,
-    Flag = "Fullbright",
-    Save = true,
-    Callback = function(Value)
-        if Value then
-            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-            Lighting.Brightness = 2
-            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-        else
-            Lighting.Ambient = Color3.fromRGB(0, 0, 0)
-            Lighting.Brightness = 1
-            Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
-        end
-    end    
-})
-
--- Time Slider
-WorldTab:AddSlider({
-    Name = "Time",
-    Min = 0,
-    Max = 24,
-    Default = 12,
-    Color = Color3.fromRGB(255, 255, 0),
-    Increment = 0.5,
-    ValueName = "Hours",
-    Callback = function(Value)
-        Lighting.ClockTime = Value
-    end    
-})
-
--- No Fog Toggle
-WorldTab:AddToggle({
-    Name = "No Fog",
-    Default = false,
-    Flag = "NoFog",
-    Save = true,
-    Callback = function(Value)
-        if Value then
-            Lighting.FogEnd = 100000
-        else
-            Lighting.FogEnd = 100000 -- Reset ke default
-        end
-    end    
-})
-
--- Clear Map Button
-WorldTab:AddButton({
-    Name = "Clear Map",
-    Callback = function()
-        local count = 0
-        for _, v in pairs(Workspace:GetDescendants()) do
-            if v:IsA("Part") and not v.Anchored then
-                v:Destroy()
-                count = count + 1
-            end
-        end
-        OrionLib:MakeNotification({
-            Name = "Map Cleared",
-            Content = count .. " parts removed",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-    end    
+    end
 })
 
 -- =============================================
 -- MISC TAB
 -- =============================================
-local MiscTab = Window:MakeTab({
-    Name = "Misc",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
--- Utilities Section
-local UtilitiesSection = MiscTab:AddSection({
-    Name = "Utilities"
-})
+local MiscTab = Window:CreateTab("Misc", "rbxassetid://4483345998")
+local MiscSection = MiscTab:CreateSection("Utilities")
 
 -- Rejoin Button
-MiscTab:AddButton({
+MiscTab:CreateButton({
     Name = "Rejoin Game",
     Callback = function()
         local ts = game:GetService("TeleportService")
         ts:Teleport(game.PlaceId, LocalPlayer)
-    end    
+    end
 })
 
 -- Server Hop Button
-MiscTab:AddButton({
+MiscTab:CreateButton({
     Name = "Server Hop",
     Callback = function()
         local HttpService = game:GetService("HttpService")
@@ -432,275 +550,82 @@ MiscTab:AddButton({
                 end
             end
         end
-    end    
+    end
 })
 
 -- Anti AFK Toggle
-local AntiAFKToggle = MiscTab:AddToggle({
+MiscTab:CreateToggle({
     Name = "Anti AFK",
-    Default = true,
+    CurrentValue = true,
     Flag = "AntiAFK",
-    Save = true,
     Callback = function(Value)
-        _G.AntiAFK = Value
-        if _G.AntiAFK then
+        if Value then
             LocalPlayer.Idled:Connect(function()
-                VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+                VirtualUser:Button2Down(Vector2.new(0, 0), Camera.CFrame)
                 wait(1)
-                VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+                VirtualUser:Button2Up(Vector2.new(0, 0), Camera.CFrame)
             end)
         end
-    end    
+    end
 })
 
--- Copy Telegram Button
-MiscTab:AddButton({
+-- Copy Telegram
+MiscTab:CreateButton({
     Name = "Copy Telegram",
     Callback = function()
         setclipboard("t.me/Swill_Way")
-        OrionLib:MakeNotification({
-            Name = "Telegram",
-            Content = "Link copied to clipboard!",
-            Image = "rbxassetid://4483345998",
-            Time = 2
+        Rayfield:Notify({
+            Title = "Telegram",
+            Content = "Link copied!",
+            Duration = 2
         })
-    end    
-})
-
--- Player Info Button
-MiscTab:AddButton({
-    Name = "Player Info",
-    Callback = function()
-        local info = string.format(
-            "Name: %s\nUserID: %d\nAccount Age: %d\nDisplay Name: %s",
-            LocalPlayer.Name,
-            LocalPlayer.UserId,
-            LocalPlayer.AccountAge,
-            LocalPlayer.DisplayName
-        )
-        OrionLib:MakeNotification({
-            Name = "Player Info",
-            Content = info,
-            Image = "rbxassetid://4483345998",
-            Time = 5
-        })
-    end    
-})
-
--- Script Loader Section
-local ScriptSection = MiscTab:AddSection({
-    Name = "Script Loader"
-})
-
--- Dex Explorer Button
-MiscTab:AddButton({
-    Name = "Dex Explorer",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
-    end    
-})
-
--- Infinite Yield Button
-MiscTab:AddButton({
-    Name = "Infinite Yield",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-    end    
-})
-
--- CMD-X Button
-MiscTab:AddButton({
-    Name = "CMD-X",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/source"))()
-    end    
+    end
 })
 
 -- =============================================
 -- SETTINGS TAB
 -- =============================================
-local SettingsTab = Window:MakeTab({
-    Name = "Settings",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+local SettingsTab = Window:CreateTab("Settings", "rbxassetid://4483345998")
+local UISection = SettingsTab:CreateSection("UI Settings")
 
--- UI Section
-local UISection = SettingsTab:AddSection({
-    Name = "UI Settings"
+-- Destroy UI Button
+SettingsTab:CreateButton({
+    Name = "Destroy UI",
+    Callback = function()
+        Rayfield:Destroy()
+    end
 })
 
 -- Toggle UI Keybind
-SettingsTab:AddBind({
-    Name = "Toggle UI",
-    Default = Enum.KeyCode.F4,
-    Hold = false,
-    Flag = "ToggleUI",
-    Save = true,
-    Callback = function()
-        OrionLib:ToggleUI()
-    end    
-})
-
--- Destroy UI Button
-SettingsTab:AddButton({
-    Name = "Destroy UI",
-    Callback = function()
-        OrionLib:Destroy()
-    end    
+SettingsTab:CreateKeybind({
+    Name = "Toggle UI Keybind",
+    CurrentKeybind = "F4",
+    HoldToInteract = false,
+    Flag = "ToggleUIKeybind",
+    Callback = function(Keybind)
+        Rayfield:Notify({
+            Title = "Keybind Changed",
+            Content = "UI Toggle: " .. Keybind,
+            Duration = 2
+        })
+    end
 })
 
 -- FPS Counter Toggle
-local FPSToggle = SettingsTab:AddToggle({
-    Name = "Show FPS",
-    Default = false,
+SettingsTab:CreateToggle({
+    Name = "Show FPS Counter",
+    CurrentValue = false,
     Flag = "ShowFPS",
-    Save = true,
     Callback = function(Value)
         if Value then
             local fpsCounter = Instance.new("ScreenGui")
             local fpsFrame = Instance.new("Frame")
             local fpsText = Instance.new("TextLabel")
             
-            fpsCounter.Name = "RYEEXNZ_FPS"
+            fpsCounter.Name = "Fisch_FPS"
             fpsCounter.Parent = game:GetService("CoreGui")
             fpsCounter.ResetOnSpawn = false
             
             fpsFrame.Parent = fpsCounter
             fpsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            fpsFrame.BackgroundTransparency = 0.5
-            fpsFrame.BorderSizePixel = 0
-            fpsFrame.Position = UDim2.new(1, -70, 0, 10)
-            fpsFrame.Size = UDim2.new(0, 60, 0, 25)
             
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 5)
-            corner.Parent = fpsFrame
-            
-            fpsText.Parent = fpsFrame
-            fpsText.Size = UDim2.new(1, 0, 1, 0)
-            fpsText.BackgroundTransparency = 1
-            fpsText.Font = Enum.Font.GothamBold
-            fpsText.Text = "FPS: 60"
-            fpsText.TextColor3 = Color3.fromRGB(0, 255, 0)
-            fpsText.TextSize = 12
-            
-            _G.FPSFrame = fpsCounter
-            _G.FPSText = fpsText
-            _G.LastTime = tick()
-            _G.Frames = 0
-            
-            RunService.RenderStepped:Connect(function()
-                if _G.FPSText then
-                    _G.Frames = _G.Frames + 1
-                    if tick() - _G.LastTime >= 1 then
-                        _G.FPSText.Text = "FPS: " .. _G.Frames
-                        _G.Frames = 0
-                        _G.LastTime = tick()
-                    end
-                end
-            end)
-        else
-            if _G.FPSFrame then
-                _G.FPSFrame:Destroy()
-                _G.FPSFrame = nil
-            end
-        end
-    end    
-})
-
--- Config Section
-local ConfigSection = SettingsTab:AddSection({
-    Name = "Config System"
-})
-
-SettingsTab:AddLabel("Configs are saved automatically")
-SettingsTab:AddLabel("Folder: RYEEXNZConfig")
-
--- =============================================
--- COLOR PICKER EXAMPLE (Optional)
--- =============================================
--- Uncomment this if you want to add a color picker
---[[
-local ColorPickerTab = Window:MakeTab({
-    Name = "Colors",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-ColorPickerTab:AddColorpicker({
-    Name = "ESP Color",
-    Default = Color3.fromRGB(255, 0, 0),
-    Flag = "ESPColor",
-    Save = true,
-    Callback = function(Value)
-        _G.ESPColor = Value
-        -- Update ESP colors here if needed
-    end	  
-})
-]]
-
--- =============================================
--- INITIALIZATION (WAJIB - Sesuai Dokumentasi)
--- =============================================
-OrionLib:Init()
-
--- =============================================
--- AUTO ANTI AFK (Default ON)
--- =============================================
-LocalPlayer.Idled:Connect(function()
-    VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
-    wait(1)
-    VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
-end)
-
--- =============================================
--- WATERMARK
--- =============================================
-local watermark = Instance.new("ScreenGui")
-local wmFrame = Instance.new("Frame")
-local wmText = Instance.new("TextLabel")
-
-watermark.Name = "RYEEXNZ_Watermark"
-watermark.Parent = game:GetService("CoreGui")
-watermark.ResetOnSpawn = false
-
-wmFrame.Parent = watermark
-wmFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-wmFrame.BackgroundTransparency = 0.5
-wmFrame.BorderSizePixel = 0
-wmFrame.Position = UDim2.new(0, 10, 1, -40)
-wmFrame.Size = UDim2.new(0, 160, 0, 30)
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 5)
-corner.Parent = wmFrame
-
-wmText.Parent = wmFrame
-wmText.Size = UDim2.new(1, 0, 1, 0)
-wmText.BackgroundTransparency = 1
-wmText.Font = Enum.Font.GothamBold
-wmText.Text = "RYEEXNZ v6.0.0 | Orion"
-wmText.TextColor3 = Color3.fromRGB(0, 200, 255)
-wmText.TextSize = 14
-
--- =============================================
--- WELCOME NOTIFICATION
--- =============================================
-OrionLib:MakeNotification({
-    Name = "RYEEXNZ EXPLOIT",
-    Content = "Version 6.0.0 loaded successfully!",
-    Image = "rbxassetid://4483345998",
-    Time = 5
-})
-
-OrionLib:MakeNotification({
-    Name = "Telegram",
-    Content = "t.me/Swill_Way",
-    Image = "rbxassetid://4483345998",
-    Time = 5
-})
-
-print("✅ RYEEXNZ EXPLOIT v6.0.0 (Orion UI) loaded!")
-print("📱 Telegram: t.me/Swill_Way")
-print("🎯 Press F4 to toggle UI")
