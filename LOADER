@@ -1,26 +1,1017 @@
--- Loader untuk THE FORGE SCRIPT
-local scriptURL = "https://raw.githubusercontent.com/xiuynghao-tech/RYEEXNZ-/refs/heads/main/RYEEXNZ"
+-- VIOLENCE DISTRICT - ULTIMATE SCRIPT
+-- UI Library: x2zu / Dummy UI
+-- ESP PREMIUM: Highlight + Tracers + Health Bar + Nama + Jarak
+-- Font rapi, warna bisa diganti, line ESP (tracers)
 
-local function loadScript()
-    local success, result = pcall(function()
-        return game:HttpGet(scriptURL)
-    end)
+-- Load UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/x2zu/OPEN-SOURCE-UI-ROBLOX/refs/heads/main/X2ZU%20UI%20ROBLOX%20OPEN%20SOURCE/DummyUi-leak-by-x2zu/fetching-main/Tools/Framework.luau"))()
 
-    if success and result then
-        local loadSuccess, scriptError = pcall(loadstring, result)
-        if loadSuccess and scriptError then
-            scriptError()
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "THE FORGE SCRIPT",
-                Text = "Loaded successfully!",
-                Duration = 3
-            })
-        else
-            warn("Load Error: " .. tostring(scriptError))
+-- Create Main Window
+local Window = Library:Window({
+    Title = "RYEENZY | VIOLENCE DISTRICT",
+    Desc = "ESP PREMIUM + TRACERS + COLOR CUSTOM",
+    Icon = 105059922903197,
+    Theme = "Dark",
+    Config = {
+        Keybind = Enum.KeyCode.RightShift,
+        Size = UDim2.new(0, 600, 0, 550)
+    },
+    CloseUIButton = {
+        Enabled = true,
+        Text = "RYEENZY"
+    }
+})
+
+-- ============================================
+-- Sidebar Vertical Separator
+-- ============================================
+local SidebarLine = Instance.new("Frame")
+SidebarLine.Size = UDim2.new(0, 1, 1, 0)
+SidebarLine.Position = UDim2.new(0, 140, 0, 0)
+SidebarLine.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+SidebarLine.BorderSizePixel = 0
+SidebarLine.ZIndex = 5
+SidebarLine.Name = "SidebarLine"
+SidebarLine.Parent = game:GetService("CoreGui")
+
+-- ============================================
+-- VARIABEL GLOBAL
+-- ============================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+getgenv().VD = {
+    -- ESP Features
+    ESPEnabled = false,
+    ShowSurvivors = true,
+    ShowKiller = true,
+    ShowGenerators = true,
+    ShowHooks = true,
+    ShowTracers = true,
+    ShowNames = true,
+    ShowDistance = true,
+    ShowHealth = true,
+    
+    -- Colors (Bisa diganti)
+    SurvivorColor = Color3.new(0, 1, 0),      -- Hijau
+    KillerColor = Color3.new(1, 0, 0),        -- Merah
+    HookColor = Color3.new(1, 0.5, 0),        -- Oranye
+    GeneratorColor = Color3.new(0, 1, 1),     -- Cyan
+    TracerColor = Color3.new(1, 1, 1),        -- Putih
+    
+    -- Survivor Features
+    AutoParry = false,
+    AutoGenerator = false,
+    NoSkillCheck = false,
+    
+    -- Killer Features
+    AutoKill = false,
+    NoCooldown = false,
+    AntiStun = false,
+    
+    -- Movement Features
+    Walkspeed = 16,
+    NoClip = false,
+    TeleportEnabled = false,
+    
+    -- Visual Features
+    Fullbright = false,
+    NoFog = false,
+}
+
+-- ============================================
+-- FUNGSI DETEKSI OBJEK
+-- ============================================
+
+-- Deteksi killer
+local function GetKiller()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            for _, obj in pairs(plr.Character:GetChildren()) do
+                if obj:IsA("Tool") then
+                    return plr
+                end
+            end
         end
-    else
-        warn("Fetch Error: " .. tostring(result))
+    end
+    return nil
+}
+
+-- Deteksi generator
+local function GetGenerators()
+    local gens = {}
+    local keywords = {"generator", "gen", "repair", "power", "gens"}
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        local name = obj.Name:lower()
+        for _, kw in pairs(keywords) do
+            if name:find(kw) then
+                if obj:IsA("BasePart") or obj:IsA("Model") then
+                    table.insert(gens, obj)
+                end
+                break
+            end
+        end
+    end
+    return gens
+}
+
+-- Deteksi hooks/kait
+local function GetHooks()
+    local hooks = {}
+    local keywords = {"hook", "kait", "hanger", "gantungan", "meat", "hook_", "hook-", "hang"}
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        local name = obj.Name:lower()
+        for _, kw in pairs(keywords) do
+            if name:find(kw) then
+                if obj:IsA("BasePart") then
+                    table.insert(hooks, obj)
+                elseif obj:IsA("Model") then
+                    table.insert(hooks, obj)
+                end
+                break
+            end
+        end
+    end
+    return hooks
+}
+
+-- ============================================
+-- FUNGSI ESP PREMIUM
+-- ============================================
+
+-- ESP untuk player
+local function CreatePlayerESP(plr, isKiller)
+    if not plr or not plr.Character then return end
+    
+    local char = plr.Character
+    local color = isKiller and getgenv().VD.KillerColor or getgenv().VD.SurvivorColor
+    local rootPart = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChildOfClass("Part")
+    local head = char:FindFirstChild("Head")
+    
+    if not rootPart then return end
+    
+    -- HIGHLIGHT
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "VD_ESP"
+    highlight.FillColor = color
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.FillTransparency = 0.5
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = char
+    
+    -- BILLBOARD untuk NAMA + JARAK
+    if head and (getgenv().VD.ShowNames or getgenv().VD.ShowDistance) then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "VD_NameTag"
+        billboard.Size = UDim2.new(0, 200, 0, 50)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = head
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        nameLabel.Position = UDim2.new(0, 0, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = plr.Name
+        nameLabel.TextColor3 = Color3.new(1, 1, 1)
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        nameLabel.TextStrokeTransparency = 0.5
+        nameLabel.TextScaled = true
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.Parent = billboard
+        
+        local distLabel = Instance.new("TextLabel")
+        distLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        distLabel.Position = UDim2.new(0, 0, 0.5, 0)
+        distLabel.BackgroundTransparency = 1
+        distLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+        distLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        distLabel.TextStrokeTransparency = 0.5
+        distLabel.TextScaled = true
+        distLabel.Font = Enum.Font.Gotham
+        distLabel.Parent = billboard
+        
+        -- Update jarak setiap saat
+        coroutine.wrap(function()
+            while billboard and billboard.Parent do
+                task.wait(0.1)
+                if getgenv().VD.ShowDistance and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local myRoot = LocalPlayer.Character.HumanoidRootPart
+                    local dist = math.floor((myRoot.Position - rootPart.Position).magnitude)
+                    distLabel.Text = dist .. "m"
+                else
+                    distLabel.Text = ""
+                end
+                
+                if not getgenv().VD.ShowNames then
+                    nameLabel.Text = ""
+                else
+                    nameLabel.Text = plr.Name
+                end
+            end
+        end)()
+    end
+    
+    -- HEALTH BAR
+    if head and getgenv().VD.ShowHealth then
+        local healthBar = Instance.new("BillboardGui")
+        healthBar.Name = "VD_HealthBar"
+        healthBar.Size = UDim2.new(0, 60, 0, 8)
+        healthBar.StudsOffset = Vector3.new(0, 3.5, 0)
+        healthBar.AlwaysOnTop = true
+        healthBar.Parent = head
+        
+        local barBg = Instance.new("Frame")
+        barBg.Size = UDim2.new(1, 0, 1, 0)
+        barBg.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+        barBg.BorderSizePixel = 0
+        barBg.Parent = healthBar
+        
+        local barFill = Instance.new("Frame")
+        barFill.Name = "Fill"
+        barFill.Size = UDim2.new(1, 0, 1, 0)
+        barFill.BackgroundColor3 = isKiller and Color3.new(1, 0, 0) or Color3.new(0, 1, 0)
+        barFill.BorderSizePixel = 0
+        barFill.Parent = barBg
+        
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum:GetPropertyChangedSignal("Health"):Connect(function()
+                barFill.Size = UDim2.new(hum.Health / hum.MaxHealth, 0, 1, 0)
+            end)
+        end
     end
 end
 
-loadScript()
+-- TRACERS (GARIS DARI PLAYER KE TARGET)
+local function CreateTracer(plr)
+    if not plr or not plr.Character then return end
+    
+    local rootPart = plr.Character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    -- Buat Drawing Line
+    local tracer = Drawing.new("Line")
+    tracer.Visible = false
+    tracer.Color = getgenv().VD.TracerColor
+    tracer.Thickness = 2
+    tracer.Transparency = 0.8
+    
+    -- Simpan di character agar bisa diakses
+    plr.Character:SetAttribute("VD_Tracer", tracer)
+    
+    return tracer
+end
+
+-- Update posisi tracer setiap frame
+RunService.RenderStepped:Connect(function()
+    if not getgenv().VD.ESPEnabled or not getgenv().VD.ShowTracers then
+        -- Sembunyikan semua tracer
+        for _, plr in pairs(Players:GetPlayers()) do
+            local tracer = plr.Character and plr.Character:GetAttribute("VD_Tracer")
+            if tracer then tracer.Visible = false end
+        end
+        return
+    end
+    
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    
+    local killer = GetKiller()
+    local myPos = Camera.CFrame.Position
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local rootPart = plr.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local isKiller = (plr == killer)
+                
+                -- Cek apakah harus ditampilkan
+                if (isKiller and getgenv().VD.ShowKiller) or (not isKiller and getgenv().VD.ShowSurvivors) then
+                    local tracer = plr.Character:GetAttribute("VD_Tracer")
+                    if not tracer then
+                        tracer = CreateTracer(plr)
+                    end
+                    
+                    if tracer then
+                        local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                        if onScreen then
+                            tracer.From = screenCenter
+                            tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+                            tracer.Color = isKiller and getgenv().VD.KillerColor or getgenv().VD.SurvivorColor
+                            tracer.Visible = true
+                        else
+                            tracer.Visible = false
+                        end
+                    end
+                else
+                    local tracer = plr.Character:GetAttribute("VD_Tracer")
+                    if tracer then tracer.Visible = false end
+                end
+            end
+        end
+    end
+end)
+
+-- ESP untuk generator
+local function CreateGeneratorESP(gen)
+    if not gen then return end
+    
+    if gen:IsA("BasePart") then
+        gen.BrickColor = BrickColor.new("Cyan")
+        gen.Material = Enum.Material.Neon
+        gen.Transparency = 0.3
+        
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "VD_GenLabel"
+        billboard.Size = UDim2.new(0, 120, 0, 35)
+        billboard.StudsOffset = Vector3.new(0, 2, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = gen
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "⚡ GENERATOR"
+        label.TextColor3 = getgenv().VD.GeneratorColor
+        label.TextStrokeColor3 = Color3.new(0, 0, 0)
+        label.TextStrokeTransparency = 0.5
+        label.TextScaled = true
+        label.Font = Enum.Font.GothamBold
+        label.Parent = billboard
+    end
+end
+
+-- ESP untuk hooks
+local function CreateHookESP(hook)
+    if not hook then return end
+    
+    if hook:IsA("BasePart") then
+        hook.BrickColor = BrickColor.new("Bright orange")
+        hook.Material = Enum.Material.Neon
+        hook.Transparency = 0.2
+        
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "VD_HookLabel"
+        billboard.Size = UDim2.new(0, 100, 0, 30)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = hook
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "⛓️ HOOK"
+        label.TextColor3 = getgenv().VD.HookColor
+        label.TextStrokeColor3 = Color3.new(0, 0, 0)
+        label.TextStrokeTransparency = 0.5
+        label.TextScaled = true
+        label.Font = Enum.Font.GothamBold
+        label.Parent = billboard
+    end
+end
+
+-- Bersihkan semua ESP
+local function RemoveAllESP()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr.Character then
+            local highlight = plr.Character:FindFirstChildOfClass("Highlight")
+            if highlight and highlight.Name == "VD_ESP" then
+                highlight:Destroy()
+            end
+            
+            local nameTag = plr.Character:FindFirstChild("VD_NameTag", true)
+            if nameTag then nameTag:Destroy() end
+            
+            local healthBar = plr.Character:FindFirstChild("VD_HealthBar", true)
+            if healthBar then healthBar:Destroy() end
+            
+            local tracer = plr.Character:GetAttribute("VD_Tracer")
+            if tracer then
+                tracer:Destroy()
+                plr.Character:SetAttribute("VD_Tracer", nil)
+            end
+        end
+    end
+    
+    for _, gen in pairs(GetGenerators()) do
+        local label = gen:FindFirstChild("VD_GenLabel", true)
+        if label then label:Destroy() end
+    end
+    
+    for _, hook in pairs(GetHooks()) do
+        local label = hook:FindFirstChild("VD_HookLabel", true)
+        if label then label:Destroy() end
+    end
+end
+
+-- ============================================
+-- MAIN TAB (ESP)
+-- ============================================
+local MainTab = Window:Tab({Title = "ESP", Icon = "eye"})
+
+MainTab:Section({Title = "ESP MASTER CONTROL"})
+
+MainTab:Toggle({
+    Title = "ENABLE ALL ESP",
+    Desc = "Aktifkan semua fitur ESP",
+    Value = false,
+    Callback = function(v)
+        getgenv().VD.ESPEnabled = v
+        if not v then RemoveAllESP() end
+        Window:Notify({
+            Title = "ESP",
+            Desc = v and "ESP Activated" or "ESP Deactivated",
+            Time = 2
+        })
+    end
+})
+
+MainTab:Section({Title = "ESP TOGGLES"})
+
+MainTab:Toggle({
+    Title = "Show Survivors",
+    Desc = "Tampilkan survivor",
+    Value = true,
+    Callback = function(v) getgenv().VD.ShowSurvivors = v end
+})
+
+MainTab:Toggle({
+    Title = "Show Killer",
+    Desc = "Tampilkan killer",
+    Value = true,
+    Callback = function(v) getgenv().VD.ShowKiller = v end
+})
+
+MainTab:Toggle({
+    Title = "Show Generators",
+    Desc = "Tampilkan generator",
+    Value = true,
+    Callback = function(v) getgenv().VD.ShowGenerators = v end
+})
+
+MainTab:Toggle({
+    Title = "Show Hooks",
+    Desc = "Tampilkan semua hook",
+    Value = true,
+    Callback = function(v) getgenv().VD.ShowHooks = v end
+})
+
+MainTab:Section({Title = "ESP VISUALS"})
+
+MainTab:Toggle({
+    Title = "Show Tracers (Lines)",
+    Desc = "Garis dari player ke target",
+    Value = true,
+    Callback = function(v) getgenv().VD.ShowTracers = v end
+})
+
+MainTab:Toggle({
+    Title = "Show Names",
+    Desc = "Tampilkan nama player",
+    Value = true,
+    Callback = function(v) getgenv().VD.ShowNames = v end
+})
+
+MainTab:Toggle({
+    Title = "Show Distance",
+    Desc = "Tampilkan jarak",
+    Value = true,
+    Callback = function(v) getgenv().VD.ShowDistance = v end
+})
+
+MainTab:Toggle({
+    Title = "Show Health Bar",
+    Desc = "Tampilkan bar kesehatan",
+    Value = true,
+    Callback = function(v) getgenv().VD.ShowHealth = v end
+})
+
+-- ============================================
+-- COLOR CUSTOMIZATION TAB
+-- ============================================
+local ColorTab = Window:Tab({Title = "Colors", Icon = "tag"})
+
+ColorTab:Section({Title = "SURVIVOR COLORS"})
+
+ColorTab:Dropdown({
+    Title = "Survivor Color",
+    Desc = "Warna highlight survivor",
+    List = {"Green", "Blue", "Yellow", "Purple", "White", "Cyan"},
+    Value = "Green",
+    Callback = function(choice)
+        local colors = {
+            Green = Color3.new(0, 1, 0),
+            Blue = Color3.new(0, 0, 1),
+            Yellow = Color3.new(1, 1, 0),
+            Purple = Color3.new(0.5, 0, 1),
+            White = Color3.new(1, 1, 1),
+            Cyan = Color3.new(0, 1, 1)
+        }
+        getgenv().VD.SurvivorColor = colors[choice]
+        Window:Notify({
+            Title = "Color Changed",
+            Desc = "Survivor color: " .. choice,
+            Time = 2
+        })
+    end
+})
+
+ColorTab:Dropdown({
+    Title = "Killer Color",
+    Desc = "Warna highlight killer",
+    List = {"Red", "Orange", "Pink", "Purple", "Maroon"},
+    Value = "Red",
+    Callback = function(choice)
+        local colors = {
+            Red = Color3.new(1, 0, 0),
+            Orange = Color3.new(1, 0.5, 0),
+            Pink = Color3.new(1, 0.5, 0.5),
+            Purple = Color3.new(0.5, 0, 1),
+            Maroon = Color3.new(0.5, 0, 0)
+        }
+        getgenv().VD.KillerColor = colors[choice]
+        Window:Notify({
+            Title = "Color Changed",
+            Desc = "Killer color: " .. choice,
+            Time = 2
+        })
+    end
+})
+
+ColorTab:Dropdown({
+    Title = "Hook Color",
+    Desc = "Warna highlight hook",
+    List = {"Orange", "Red", "Yellow", "Purple", "Gold"},
+    Value = "Orange",
+    Callback = function(choice)
+        local colors = {
+            Orange = Color3.new(1, 0.5, 0),
+            Red = Color3.new(1, 0, 0),
+            Yellow = Color3.new(1, 1, 0),
+            Purple = Color3.new(0.5, 0, 1),
+            Gold = Color3.new(1, 0.8, 0)
+        }
+        getgenv().VD.HookColor = colors[choice]
+    end
+})
+
+ColorTab:Dropdown({
+    Title = "Generator Color",
+    Desc = "Warna highlight generator",
+    List = {"Cyan", "Green", "Blue", "White"},
+    Value = "Cyan",
+    Callback = function(choice)
+        local colors = {
+            Cyan = Color3.new(0, 1, 1),
+            Green = Color3.new(0, 1, 0),
+            Blue = Color3.new(0, 0, 1),
+            White = Color3.new(1, 1, 1)
+        }
+        getgenv().VD.GeneratorColor = colors[choice]
+    end
+})
+
+ColorTab:Dropdown({
+    Title = "Tracer Color",
+    Desc = "Warna garis ESP",
+    List = {"White", "Red", "Blue", "Green", "Yellow"},
+    Value = "White",
+    Callback = function(choice)
+        local colors = {
+            White = Color3.new(1, 1, 1),
+            Red = Color3.new(1, 0, 0),
+            Blue = Color3.new(0, 0, 1),
+            Green = Color3.new(0, 1, 0),
+            Yellow = Color3.new(1, 1, 0)
+        }
+        getgenv().VD.TracerColor = colors[choice]
+    end
+})
+
+-- ============================================
+-- SURVIVOR TAB
+-- ============================================
+local SurvivorTab = Window:Tab({Title = "Survivor", Icon = "user"})
+
+SurvivorTab:Section({Title = "SURVIVOR FEATURES"})
+
+SurvivorTab:Toggle({
+    Title = "Auto Parry",
+    Desc = "Otomatis memblokir serangan killer",
+    Value = false,
+    Callback = function(v) getgenv().VD.AutoParry = v end
+})
+
+SurvivorTab:Toggle({
+    Title = "Auto Generator",
+    Desc = "Otomatis memperbaiki generator",
+    Value = false,
+    Callback = function(v) getgenv().VD.AutoGenerator = v end
+})
+
+SurvivorTab:Toggle({
+    Title = "No Skill Check",
+    Desc = "Menghilangkan skill check",
+    Value = false,
+    Callback = function(v) getgenv().VD.NoSkillCheck = v end
+})
+
+-- ============================================
+-- KILLER TAB
+-- ============================================
+local KillerTab = Window:Tab({Title = "Killer", Icon = "swords"})
+
+KillerTab:Section({Title = "KILLER FEATURES"})
+
+KillerTab:Toggle({
+    Title = "Auto Kill",
+    Desc = "Otomatis membunuh survivor terdekat",
+    Value = false,
+    Callback = function(v) getgenv().VD.AutoKill = v end
+})
+
+KillerTab:Toggle({
+    Title = "No Cooldown",
+    Desc = "Menghilangkan cooldown",
+    Value = false,
+    Callback = function(v) getgenv().VD.NoCooldown = v end
+})
+
+KillerTab:Toggle({
+    Title = "Anti Stun",
+    Desc = "Mencegah efek stun",
+    Value = false,
+    Callback = function(v) getgenv().VD.AntiStun = v end
+})
+
+-- ============================================
+-- MOVEMENT TAB
+-- ============================================
+local MovementTab = Window:Tab({Title = "Movement", Icon = "zap"})
+
+MovementTab:Section({Title = "MOVEMENT"})
+
+MovementTab:Slider({
+    Title = "Walk Speed",
+    Min = 16,
+    Max = 120,
+    Rounding = 0,
+    Value = 16,
+    Callback = function(val)
+        getgenv().VD.Walkspeed = val
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = val end
+        end
+    end
+})
+
+MovementTab:Toggle({
+    Title = "NoClip",
+    Desc = "Tembus dinding",
+    Value = false,
+    Callback = function(v) getgenv().VD.NoClip = v end
+})
+
+MovementTab:Toggle({
+    Title = "Teleport Mode",
+    Desc = "Klik kiri untuk teleport",
+    Value = false,
+    Callback = function(v) getgenv().VD.TeleportEnabled = v end
+})
+
+-- ============================================
+-- VISUALS TAB
+-- ============================================
+local VisualsTab = Window:Tab({Title = "Visuals", Icon = "sparkles"})
+
+VisualsTab:Section({Title = "VISUALS"})
+
+VisualsTab:Toggle({
+    Title = "Fullbright",
+    Desc = "Terangi seluruh map",
+    Value = false,
+    Callback = function(v)
+        getgenv().VD.Fullbright = v
+        if v then
+            game.Lighting.Ambient = Color3.new(1, 1, 1)
+            game.Lighting.Brightness = 2
+        else
+            game.Lighting.Ambient = Color3.new(0, 0, 0)
+            game.Lighting.Brightness = 1
+        end
+    end
+})
+
+VisualsTab:Toggle({
+    Title = "No Fog",
+    Desc = "Hilangkan fog",
+    Value = false,
+    Callback = function(v)
+        getgenv().VD.NoFog = v
+        if v then
+            game.Lighting.FogEnd = 100000
+        else
+            game.Lighting.FogEnd = 1000
+        end
+    end
+})
+
+-- ============================================
+-- INFO TAB
+-- ============================================
+local InfoTab = Window:Tab({Title = "Info", Icon = "info"})
+
+InfoTab:Section({Title = "GAME INFORMATION"})
+
+InfoTab:Button({
+    Title = "Refresh Info",
+    Desc = "Update informasi game",
+    Callback = function()
+        local killer = GetKiller()
+        Window:Notify({
+            Title = "Game Info",
+            Desc = "Players: " .. #Players:GetPlayers() .. " | Killer: " .. (killer and killer.Name or "None"),
+            Time = 3
+        })
+    end
+})
+
+InfoTab:Code({
+    Title = "ESP PREMIUM GUIDE",
+    Code = [[
+VIOLENCE DISTRICT - ESP PREMIUM
+================================
+✓ Highlight warna-warni
+✓ Tracers (garis) ke target
+✓ Name tags dengan font keren
+✓ Distance meter
+✓ Health bars
+✓ Generator & Hook ESP
+
+WARNA BISA DIGANTI di tab Colors!
+Tekan RightShift untuk buka/tutup menu
+]]
+})
+
+-- ============================================
+-- LINE SEPARATORS
+-- ============================================
+Window:Line()
+Window:Line()
+
+-- ============================================
+-- MAIN LOOP ESP
+-- ============================================
+coroutine.wrap(function()
+    while task.wait(0.3) do
+        if getgenv().VD.ESPEnabled then
+            local killer = GetKiller()
+            
+            -- ESP untuk player
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and plr.Character then
+                    local isKiller = (plr == killer)
+                    
+                    if (isKiller and getgenv().VD.ShowKiller) or (not isKiller and getgenv().VD.ShowSurvivors) then
+                        local existing = plr.Character:FindFirstChildOfClass("Highlight")
+                        if not existing or existing.Name ~= "VD_ESP" then
+                            CreatePlayerESP(plr, isKiller)
+                        end
+                    else
+                        -- Hapus ESP jika tidak ditampilkan
+                        local highlight = plr.Character:FindFirstChildOfClass("Highlight")
+                        if highlight and highlight.Name == "VD_ESP" then
+                            highlight:Destroy()
+                        end
+                    end
+                end
+            end
+            
+            -- ESP untuk generator
+            if getgenv().VD.ShowGenerators then
+                for _, gen in pairs(GetGenerators()) do
+                    if gen:IsA("BasePart") then
+                        local existing = gen:FindFirstChild("VD_GenLabel", true)
+                        if not existing then
+                            CreateGeneratorESP(gen)
+                        end
+                    end
+                end
+            end
+            
+            -- ESP untuk hooks
+            if getgenv().VD.ShowHooks then
+                local hooks = GetHooks()
+                for _, hook in pairs(hooks) do
+                    if hook:IsA("BasePart") then
+                        local existing = hook:FindFirstChild("VD_HookLabel", true)
+                        if not existing then
+                            CreateHookESP(hook)
+                        end
+                    end
+                end
+            end
+        else
+            RemoveAllESP()
+        end
+    end
+end)()
+
+-- ============================================
+-- FEATURE LOOPS
+-- ============================================
+
+-- Auto Parry
+RunService.Heartbeat:Connect(function()
+    if not getgenv().VD.AutoParry then return end
+    local killer = GetKiller()
+    if not killer or not killer.Character then return end
+    
+    local killerRoot = killer.Character:FindFirstChild("HumanoidRootPart")
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    
+    if killerRoot and myRoot and (killerRoot.Position - myRoot.Position).magnitude < 15 then
+        for _, obj in pairs(LocalPlayer.Character:GetDescendants()) do
+            if obj:IsA("RemoteEvent") and obj.Name:lower():find("parry") then
+                pcall(function() obj:FireServer() end)
+            end
+        end
+    end
+end)
+
+-- Auto Generator
+coroutine.wrap(function()
+    while task.wait(0.5) do
+        if not getgenv().VD.AutoGenerator then return end
+        local gens = GetGenerators()
+        if #gens == 0 then return end
+        
+        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not myRoot then return end
+        
+        local closestGen = nil
+        local closestDist = math.huge
+        
+        for _, gen in pairs(gens) do
+            local genPos = gen:IsA("BasePart") and gen.Position or (gen:IsA("Model") and gen:GetPrimaryPartCFrame() and gen:GetPrimaryPartCFrame().p)
+            if genPos then
+                local dist = (myRoot.Position - genPos).magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closestGen = gen
+                end
+            end
+        end
+        
+        if closestGen then
+            if closestDist > 5 then
+                myRoot.CFrame = CFrame.new(closestGen.Position) + Vector3.new(0, 3, 0)
+            else
+                if closestGen:IsA("BasePart") then
+                    firetouchinterest(myRoot, closestGen, 0)
+                    firetouchinterest(myRoot, closestGen, 1)
+                end
+                for _, obj in pairs(closestGen:GetDescendants()) do
+                    if obj:IsA("RemoteEvent") and (obj.Name:lower():find("repair") or obj.Name:lower():find("generator")) then
+                        pcall(function() obj:FireServer() end)
+                    end
+                end
+            end
+        end
+    end
+end)()
+
+-- Auto Kill
+coroutine.wrap(function()
+    while task.wait(0.3) do
+        if not getgenv().VD.AutoKill then return end
+        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not myRoot then return end
+        
+        local closestSurvivor = nil
+        local closestDist = math.huge
+        
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer then
+                local plrRoot = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+                if plrRoot then
+                    local dist = (myRoot.Position - plrRoot.Position).magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        closestSurvivor = plr
+                    end
+                end
+            end
+        end
+        
+        if closestSurvivor and closestDist < 20 then
+            local char = LocalPlayer.Character
+            if char then
+                for _, tool in pairs(char:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        tool:Activate()
+                        for _, remote in pairs(tool:GetDescendants()) do
+                            if remote:IsA("RemoteEvent") and (remote.Name:lower():find("attack") or remote.Name:lower():find("kill")) then
+                                pcall(function() remote:FireServer(closestSurvivor) end)
+                            end
+                        end
+                    end
+                end
+                myRoot.CFrame = CFrame.lookAt(myRoot.Position, closestSurvivor.Character.HumanoidRootPart.Position)
+            end
+        end
+    end
+end)()
+
+-- No Cooldown
+RunService.Heartbeat:Connect(function()
+    if getgenv().VD.NoCooldown then
+        local char = LocalPlayer.Character
+        if char then
+            for _, obj in pairs(char:GetDescendants()) do
+                if obj:IsA("NumberValue") and (obj.Name:lower():find("cooldown") or obj.Name:lower():find("cd")) then
+                    obj.Value = 0
+                end
+            end
+        end
+    end
+end)
+
+-- Anti Stun
+RunService.Stepped:Connect(function()
+    if getgenv().VD.AntiStun then
+        local char = LocalPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+                humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            end
+        end
+    end
+end)
+
+-- Walkspeed maintain
+RunService.Heartbeat:Connect(function()
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.WalkSpeed ~= getgenv().VD.Walkspeed then
+            hum.WalkSpeed = getgenv().VD.Walkspeed
+        end
+    end
+end)
+
+-- NoClip
+RunService.Stepped:Connect(function()
+    if getgenv().VD.NoClip then
+        local char = LocalPlayer.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end
+end)
+
+-- Teleport on click
+Mouse.Button1Down:Connect(function()
+    if getgenv().VD.TeleportEnabled then
+        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            root.CFrame = CFrame.new(Mouse.Hit.p)
+            Window:Notify({
+                Title = "Teleport",
+                Desc = "Teleported!",
+                Time = 1
+            })
+        end
+    end
+end)
+
+-- ============================================
+-- FINAL NOTIFICATION
+-- ============================================
+Window:Notify({
+    Title = "RYEENZY | VIOLENCE DISTRICT",
+    Desc = "ESP PREMIUM Loaded! Tekan RightShift",
+    Time = 4
+})
+
+Window:Notify({
+    Title = "FITUR ESP PREMIUM",
+    Desc = "Tracers | Names | Distance | Health | Warna bisa diganti!",
+    Time = 5
+})
