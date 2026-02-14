@@ -1,13 +1,27 @@
 --[[ 
-    RYEEXNZ EXPLOIT - Kavo UI Version
-    Version: 5.0.0
-    Status: 100% WORKING
+    RYEEXNZ EXPLOIT - Orion UI Version
+    Version: 6.0.0
+    Based on Official Orion Documentation
     Telegram: t.me/Swill_Way
 ]]
 
--- Load Kavo UI (Library yang masih hidup)
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("RYEEXNZ EXPLOIT v5.0.0", "DarkTheme")
+-- Load Orion Library (sesuai dokumentasi)
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
+
+-- Create Window (sesuai dokumentasi)
+local Window = OrionLib:MakeWindow({
+    Name = "RYEEXNZ EXPLOIT v6.0.0",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "RYEEXNZConfig",
+    IntroEnabled = true,
+    IntroText = "RYEEXNZ EXPLOIT",
+    IntroIcon = "rbxassetid://4483345998",
+    Icon = "rbxassetid://4483345998",
+    CloseCallback = function()
+        print("RYEEXNZ Window Closed")
+    end
+})
 
 -- Services
 local Players = game:GetService("Players")
@@ -18,356 +32,618 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
+local Lighting = game:GetService("Lighting")
 
 -- =============================================
 -- PLAYER TAB
 -- =============================================
-local PlayerTab = Window:NewTab("Player")
-local PlayerSection = PlayerTab:NewSection("Movement")
+local PlayerTab = Window:MakeTab({
+    Name = "Player",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- Movement Section
+local MovementSection = PlayerTab:AddSection({
+    Name = "Movement"
+})
 
 -- WalkSpeed Slider
-PlayerSection:NewSlider("WalkSpeed", "Ubah kecepatan jalan", 250, 16, function(value)
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.WalkSpeed = value
-    end
-end)
+PlayerTab:AddSlider({
+    Name = "WalkSpeed",
+    Min = 16,
+    Max = 250,
+    Default = 16,
+    Color = Color3.fromRGB(0, 200, 255),
+    Increment = 1,
+    ValueName = "Speed",
+    Callback = function(Value)
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = Value
+        end
+    end    
+})
 
 -- JumpPower Slider
-PlayerSection:NewSlider("JumpPower", "Ubah kekuatan lompat", 250, 50, function(value)
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.JumpPower = value
-    end
-end)
+PlayerTab:AddSlider({
+    Name = "JumpPower",
+    Min = 50,
+    Max = 250,
+    Default = 50,
+    Color = Color3.fromRGB(255, 100, 100),
+    Increment = 1,
+    ValueName = "Power",
+    Callback = function(Value)
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.JumpPower = Value
+        end
+    end    
+})
 
 -- Gravity Slider
-PlayerSection:NewSlider("Gravity", "Ubah gravitasi", 500, 0, function(value)
-    Workspace.Gravity = value
-end)
+PlayerTab:AddSlider({
+    Name = "Gravity",
+    Min = 0,
+    Max = 500,
+    Default = 196.2,
+    Color = Color3.fromRGB(100, 255, 100),
+    Increment = 1,
+    ValueName = "Force",
+    Callback = function(Value)
+        Workspace.Gravity = Value
+    end    
+})
 
--- Infinity Jump
-PlayerSection:NewToggle("Infinity Jump", "Lompat tanpa batas", function(state)
-    _G.InfJump = state
-    if _G.InfJump then
-        UserInputService.JumpRequest:Connect(function()
-            if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
-        end)
-    end
-end)
+-- Infinity Jump Toggle
+local InfinityJumpToggle = PlayerTab:AddToggle({
+    Name = "Infinity Jump",
+    Default = false,
+    Flag = "InfinityJump",
+    Save = true,
+    Callback = function(Value)
+        _G.InfJump = Value
+        if _G.InfJump then
+            UserInputService.JumpRequest:Connect(function()
+                if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end)
+        end
+    end    
+})
 
--- NoClip
-PlayerSection:NewToggle("NoClip", "Tembus dinding", function(state)
-    _G.NoClip = state
-    if _G.NoClip then
-        RunService.Stepped:Connect(function()
-            if _G.NoClip and LocalPlayer.Character then
-                for _, v in pairs(LocalPlayer.Character:GetChildren()) do
-                    if v:IsA("BasePart") then
-                        v.CanCollide = false
+-- NoClip Toggle
+local NoClipToggle = PlayerTab:AddToggle({
+    Name = "NoClip",
+    Default = false,
+    Flag = "NoClip",
+    Save = true,
+    Callback = function(Value)
+        _G.NoClip = Value
+        if _G.NoClip then
+            RunService.Stepped:Connect(function()
+                if _G.NoClip and LocalPlayer.Character then
+                    for _, v in pairs(LocalPlayer.Character:GetChildren()) do
+                        if v:IsA("BasePart") then
+                            v.CanCollide = false
+                        end
                     end
                 end
-            end
-        end)
-    end
-end)
+            end)
+        end
+    end    
+})
 
--- Fly Mode
-PlayerSection:NewToggle("Fly Mode", "Terbang bebas (WASD + Spasi + Ctrl)", function(state)
-    _G.Fly = state
-    if _G.Fly then
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
-        bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
-        
-        RunService.RenderStepped:Connect(function()
-            if _G.Fly and LocalPlayer.Character then
-                local direction = Vector3.new(0, 0, 0)
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + Workspace.CurrentCamera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - Workspace.CurrentCamera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - Workspace.CurrentCamera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + Workspace.CurrentCamera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direction = direction + Vector3.new(0, 1, 0) end
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direction = direction - Vector3.new(0, 1, 0) end
-                
-                bodyVelocity.Velocity = direction * 50
-            elseif not _G.Fly and bodyVelocity then
-                bodyVelocity:Destroy()
-            end
-        end)
-    end
-end)
+-- Fly Mode Toggle
+local FlyToggle = PlayerTab:AddToggle({
+    Name = "Fly Mode",
+    Default = false,
+    Flag = "FlyMode",
+    Save = true,
+    Callback = function(Value)
+        _G.Fly = Value
+        if _G.Fly then
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+            bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
+            
+            RunService.RenderStepped:Connect(function()
+                if _G.Fly and LocalPlayer.Character then
+                    local direction = Vector3.new(0, 0, 0)
+                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + Workspace.CurrentCamera.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - Workspace.CurrentCamera.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - Workspace.CurrentCamera.CFrame.RightVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + Workspace.CurrentCamera.CFrame.RightVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direction = direction + Vector3.new(0, 1, 0) end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direction = direction - Vector3.new(0, 1, 0) end
+                    
+                    bodyVelocity.Velocity = direction * 50
+                elseif not _G.Fly and bodyVelocity then
+                    bodyVelocity:Destroy()
+                end
+            end)
+        end
+    end    
+})
 
 -- Combat Section
-local CombatSection = PlayerTab:NewSection("Combat")
+local CombatSection = PlayerTab:AddSection({
+    Name = "Combat"
+})
 
--- Click Teleport
-CombatSection:NewToggle("Click Teleport", "Klik untuk teleport", function(state)
-    _G.ClickTP = state
-    if _G.ClickTP then
-        Mouse.Button1Down:Connect(function()
-            if _G.ClickTP and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local target = Mouse.Hit
-                if target then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(target.X, target.Y + 3, target.Z)
+-- Click Teleport Toggle
+local ClickTPToggle = PlayerTab:AddToggle({
+    Name = "Click Teleport",
+    Default = false,
+    Flag = "ClickTP",
+    Save = true,
+    Callback = function(Value)
+        _G.ClickTP = Value
+        if _G.ClickTP then
+            Mouse.Button1Down:Connect(function()
+                if _G.ClickTP and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local target = Mouse.Hit
+                    if target then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(target.X, target.Y + 3, target.Z)
+                    end
                 end
-            end
-        end)
-    end
-end)
+            end)
+        end
+    end    
+})
 
--- Reset Character
-CombatSection:NewButton("Reset Character", "Matikan karakter", function()
-    if LocalPlayer.Character then
-        LocalPlayer.Character:BreakJoints()
-    end
-end)
+-- Reset Character Button
+PlayerTab:AddButton({
+    Name = "Reset Character",
+    Callback = function()
+        if LocalPlayer.Character then
+            LocalPlayer.Character:BreakJoints()
+        end
+        OrionLib:MakeNotification({
+            Name = "Character Reset",
+            Content = "Character has been reset",
+            Image = "rbxassetid://4483345998",
+            Time = 3
+        })
+    end    
+})
 
 -- =============================================
 -- ESP TAB
 -- =============================================
-local ESPTab = Window:NewTab("ESP")
-local ESPSection = ESPTab:NewSection("Visual ESP")
+local ESPTab = Window:MakeTab({
+    Name = "ESP",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
--- Player ESP
-ESPSection:NewToggle("Player ESP", "Tandai pemain lain", function(state)
-    _G.PlayerESP = state
-    if _G.PlayerESP then
-        while _G.PlayerESP do
-            wait(1)
+-- Visual Section
+local VisualSection = ESPTab:AddSection({
+    Name = "Visual ESP"
+})
+
+-- Player ESP Toggle
+local PlayerESPToggle = ESPTab:AddToggle({
+    Name = "Player ESP",
+    Default = false,
+    Flag = "PlayerESP",
+    Save = true,
+    Callback = function(Value)
+        _G.PlayerESP = Value
+        if _G.PlayerESP then
+            while _G.PlayerESP do
+                wait(1)
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        if not player.Character:FindFirstChild("ESP_Highlight") then
+                            local highlight = Instance.new("Highlight")
+                            highlight.Name = "ESP_Highlight"
+                            highlight.Parent = player.Character
+                            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                            highlight.FillTransparency = 0.5
+                        end
+                    end
+                end
+            end
+        else
             for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    if not player.Character:FindFirstChild("ESP_Highlight") then
-                        local highlight = Instance.new("Highlight")
-                        highlight.Name = "ESP_Highlight"
-                        highlight.Parent = player.Character
-                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                        highlight.FillTransparency = 0.5
+                if player.Character and player.Character:FindFirstChild("ESP_Highlight") then
+                    player.Character.ESP_Highlight:Destroy()
+                end
+            end
+        end
+    end    
+})
+
+-- Name ESP Toggle
+local NameESPToggle = ESPTab:AddToggle({
+    Name = "Name ESP",
+    Default = false,
+    Flag = "NameESP",
+    Save = true,
+    Callback = function(Value)
+        _G.NameESP = Value
+        if _G.NameESP then
+            while _G.NameESP do
+                wait(0.1)
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                        if not player.Character.Head:FindFirstChild("NameESP") then
+                            local billboard = Instance.new("BillboardGui")
+                            local textLabel = Instance.new("TextLabel")
+                            
+                            billboard.Name = "NameESP"
+                            billboard.Parent = player.Character.Head
+                            billboard.Size = UDim2.new(0, 100, 0, 30)
+                            billboard.StudsOffset = Vector3.new(0, 2, 0)
+                            billboard.AlwaysOnTop = true
+                            
+                            textLabel.Parent = billboard
+                            textLabel.Size = UDim2.new(1, 0, 1, 0)
+                            textLabel.BackgroundTransparency = 1
+                            textLabel.Text = player.Name
+                            textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                            textLabel.TextStrokeTransparency = 0
+                            textLabel.TextSize = 14
+                        end
+                    end
+                end
+            end
+        else
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("Head") then
+                    if player.Character.Head:FindFirstChild("NameESP") then
+                        player.Character.Head.NameESP:Destroy()
                     end
                 end
             end
         end
-    else
-        for _, player in pairs(Players:GetPlayers()) do
-            if player.Character and player.Character:FindFirstChild("ESP_Highlight") then
-                player.Character.ESP_Highlight:Destroy()
-            end
-        end
-    end
-end)
+    end    
+})
 
--- Name ESP
-ESPSection:NewToggle("Name ESP", "Tampilkan nama", function(state)
-    _G.NameESP = state
-    if _G.NameESP then
-        while _G.NameESP do
-            wait(0.1)
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-                    if not player.Character.Head:FindFirstChild("NameESP") then
-                        local billboard = Instance.new("BillboardGui")
-                        local textLabel = Instance.new("TextLabel")
-                        
-                        billboard.Name = "NameESP"
-                        billboard.Parent = player.Character.Head
-                        billboard.Size = UDim2.new(0, 100, 0, 30)
-                        billboard.StudsOffset = Vector3.new(0, 2, 0)
-                        billboard.AlwaysOnTop = true
-                        
-                        textLabel.Parent = billboard
-                        textLabel.Size = UDim2.new(1, 0, 1, 0)
-                        textLabel.BackgroundTransparency = 1
-                        textLabel.Text = player.Name
-                        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                        textLabel.TextStrokeTransparency = 0
-                        textLabel.TextSize = 14
-                    end
-                end
-            end
-        end
-    else
-        for _, player in pairs(Players:GetPlayers()) do
-            if player.Character and player.Character:FindFirstChild("Head") then
-                if player.Character.Head:FindFirstChild("NameESP") then
-                    player.Character.Head.NameESP:Destroy()
-                end
-            end
-        end
-    end
-end)
+-- Box ESP (Label sebagai placeholder)
+ESPTab:AddLabel("Box ESP - Coming Soon")
+
+-- Tracers (Label sebagai placeholder)
+ESPTab:AddLabel("Tracers - Coming Soon")
 
 -- =============================================
 -- WORLD TAB
 -- =============================================
-local WorldTab = Window:NewTab("World")
-local WorldSection = WorldTab:NewSection("Environment")
+local WorldTab = Window:MakeTab({
+    Name = "World",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
--- Fullbright
-WorldSection:NewToggle("Fullbright", "Terang terus", function(state)
-    if state then
-        game:GetService("Lighting").Ambient = Color3.fromRGB(255, 255, 255)
-        game:GetService("Lighting").Brightness = 2
-    else
-        game:GetService("Lighting").Ambient = Color3.fromRGB(0, 0, 0)
-        game:GetService("Lighting").Brightness = 1
-    end
-end)
+-- Environment Section
+local EnvironmentSection = WorldTab:AddSection({
+    Name = "Environment"
+})
+
+-- Fullbright Toggle
+local FullbrightToggle = WorldTab:AddToggle({
+    Name = "Fullbright",
+    Default = false,
+    Flag = "Fullbright",
+    Save = true,
+    Callback = function(Value)
+        if Value then
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.Brightness = 2
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        else
+            Lighting.Ambient = Color3.fromRGB(0, 0, 0)
+            Lighting.Brightness = 1
+            Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
+        end
+    end    
+})
 
 -- Time Slider
-WorldSection:NewSlider("Time", "Ubah waktu", 24, 12, function(value)
-    game:GetService("Lighting").ClockTime = value
-end)
+WorldTab:AddSlider({
+    Name = "Time",
+    Min = 0,
+    Max = 24,
+    Default = 12,
+    Color = Color3.fromRGB(255, 255, 0),
+    Increment = 0.5,
+    ValueName = "Hours",
+    Callback = function(Value)
+        Lighting.ClockTime = Value
+    end    
+})
 
--- Clear Map
-WorldSection:NewButton("Clear Map", "Hapus semua part", function()
-    for _, v in pairs(Workspace:GetDescendants()) do
-        if v:IsA("Part") and not v.Anchored then
-            v:Destroy()
+-- No Fog Toggle
+WorldTab:AddToggle({
+    Name = "No Fog",
+    Default = false,
+    Flag = "NoFog",
+    Save = true,
+    Callback = function(Value)
+        if Value then
+            Lighting.FogEnd = 100000
+        else
+            Lighting.FogEnd = 100000 -- Reset ke default
         end
-    end
-end)
+    end    
+})
+
+-- Clear Map Button
+WorldTab:AddButton({
+    Name = "Clear Map",
+    Callback = function()
+        local count = 0
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if v:IsA("Part") and not v.Anchored then
+                v:Destroy()
+                count = count + 1
+            end
+        end
+        OrionLib:MakeNotification({
+            Name = "Map Cleared",
+            Content = count .. " parts removed",
+            Image = "rbxassetid://4483345998",
+            Time = 3
+        })
+    end    
+})
 
 -- =============================================
 -- MISC TAB
 -- =============================================
-local MiscTab = Window:NewTab("Misc")
-local MiscSection = MiscTab:NewSection("Utilities")
+local MiscTab = Window:MakeTab({
+    Name = "Misc",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
--- Rejoin
-MiscSection:NewButton("Rejoin Game", "Masuk lagi ke server", function()
-    game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
-end)
+-- Utilities Section
+local UtilitiesSection = MiscTab:AddSection({
+    Name = "Utilities"
+})
 
--- Server Hop
-MiscSection:NewButton("Server Hop", "Cari server lain", function()
-    local HttpService = game:GetService("HttpService")
-    local success, result = pcall(function()
-        return game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100")
-    end)
-    
-    if success then
-        local servers = HttpService:JSONDecode(result).data
-        for _, server in pairs(servers) do
-            if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
-                break
+-- Rejoin Button
+MiscTab:AddButton({
+    Name = "Rejoin Game",
+    Callback = function()
+        local ts = game:GetService("TeleportService")
+        ts:Teleport(game.PlaceId, LocalPlayer)
+    end    
+})
+
+-- Server Hop Button
+MiscTab:AddButton({
+    Name = "Server Hop",
+    Callback = function()
+        local HttpService = game:GetService("HttpService")
+        local success, result = pcall(function()
+            return game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100")
+        end)
+        
+        if success then
+            local servers = HttpService:JSONDecode(result).data
+            for _, server in pairs(servers) do
+                if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+                    break
+                end
             end
         end
-    end
-end)
+    end    
+})
 
--- Anti AFK
-MiscSection:NewToggle("Anti AFK", "Cegah kick karena idle", function(state)
-    if state then
-        LocalPlayer.Idled:Connect(function()
-            VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
-            wait(1)
-            VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
-        end)
-    end
-end)
+-- Anti AFK Toggle
+local AntiAFKToggle = MiscTab:AddToggle({
+    Name = "Anti AFK",
+    Default = true,
+    Flag = "AntiAFK",
+    Save = true,
+    Callback = function(Value)
+        _G.AntiAFK = Value
+        if _G.AntiAFK then
+            LocalPlayer.Idled:Connect(function()
+                VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+                wait(1)
+                VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+            end)
+        end
+    end    
+})
 
--- Copy Telegram
-MiscSection:NewButton("Copy Telegram", "t.me/Swill_Way", function()
-    setclipboard("t.me/Swill_Way")
-end)
+-- Copy Telegram Button
+MiscTab:AddButton({
+    Name = "Copy Telegram",
+    Callback = function()
+        setclipboard("t.me/Swill_Way")
+        OrionLib:MakeNotification({
+            Name = "Telegram",
+            Content = "Link copied to clipboard!",
+            Image = "rbxassetid://4483345998",
+            Time = 2
+        })
+    end    
+})
 
--- Load Scripts
-local ScriptSection = MiscTab:NewSection("Script Loader")
+-- Player Info Button
+MiscTab:AddButton({
+    Name = "Player Info",
+    Callback = function()
+        local info = string.format(
+            "Name: %s\nUserID: %d\nAccount Age: %d\nDisplay Name: %s",
+            LocalPlayer.Name,
+            LocalPlayer.UserId,
+            LocalPlayer.AccountAge,
+            LocalPlayer.DisplayName
+        )
+        OrionLib:MakeNotification({
+            Name = "Player Info",
+            Content = info,
+            Image = "rbxassetid://4483345998",
+            Time = 5
+        })
+    end    
+})
 
--- Dex Explorer
-ScriptSection:NewButton("Dex Explorer", "Explorer GUI", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
-end)
+-- Script Loader Section
+local ScriptSection = MiscTab:AddSection({
+    Name = "Script Loader"
+})
 
--- Infinite Yield
-ScriptSection:NewButton("Infinite Yield", "Admin commands", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-end)
+-- Dex Explorer Button
+MiscTab:AddButton({
+    Name = "Dex Explorer",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
+    end    
+})
 
--- CMD-X
-ScriptSection:NewButton("CMD-X", "Console commands", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/source"))()
-end)
+-- Infinite Yield Button
+MiscTab:AddButton({
+    Name = "Infinite Yield",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    end    
+})
+
+-- CMD-X Button
+MiscTab:AddButton({
+    Name = "CMD-X",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/source"))()
+    end    
+})
 
 -- =============================================
 -- SETTINGS TAB
 -- =============================================
-local SettingsTab = Window:NewTab("Settings")
-local SettingsSection = SettingsTab:NewSection("UI Settings")
+local SettingsTab = Window:MakeTab({
+    Name = "Settings",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
--- Destroy UI
-SettingsSection:NewButton("Destroy UI", "Hapus GUI", function()
-    Library:DestroyUI()
-end)
+-- UI Section
+local UISection = SettingsTab:AddSection({
+    Name = "UI Settings"
+})
 
--- Toggle UI
-SettingsSection:NewKeybind("Toggle UI", "Tekan untuk hide/show", Enum.KeyCode.F4, function()
-    Library:ToggleUI()
-end)
+-- Toggle UI Keybind
+SettingsTab:AddBind({
+    Name = "Toggle UI",
+    Default = Enum.KeyCode.F4,
+    Hold = false,
+    Flag = "ToggleUI",
+    Save = true,
+    Callback = function()
+        OrionLib:ToggleUI()
+    end    
+})
 
--- Reset Position
-SettingsSection:NewButton("Reset Position", "Kembalikan ke posisi awal", function()
-    -- Kavo UI tidak punya reset position bawaan
-end)
+-- Destroy UI Button
+SettingsTab:AddButton({
+    Name = "Destroy UI",
+    Callback = function()
+        OrionLib:Destroy()
+    end    
+})
 
--- FPS Counter
-local FPSSection = SettingsTab:NewSection("FPS Counter")
-
--- Toggle FPS Counter
-FPSSection:NewToggle("Show FPS", "Tampilkan FPS counter", function(state)
-    if state then
-        local fpsCounter = Instance.new("ScreenGui")
-        local fpsFrame = Instance.new("Frame")
-        local fpsText = Instance.new("TextLabel")
-        
-        fpsCounter.Name = "RYEEXNZ_FPS"
-        fpsCounter.Parent = game:GetService("CoreGui")
-        fpsCounter.ResetOnSpawn = false
-        
-        fpsFrame.Parent = fpsCounter
-        fpsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-        fpsFrame.BackgroundTransparency = 0.5
-        fpsFrame.BorderSizePixel = 0
-        fpsFrame.Position = UDim2.new(1, -70, 0, 10)
-        fpsFrame.Size = UDim2.new(0, 60, 0, 25)
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 5)
-        corner.Parent = fpsFrame
-        
-        fpsText.Parent = fpsFrame
-        fpsText.Size = UDim2.new(1, 0, 1, 0)
-        fpsText.BackgroundTransparency = 1
-        fpsText.Font = Enum.Font.GothamBold
-        fpsText.Text = "FPS: 60"
-        fpsText.TextColor3 = Color3.fromRGB(0, 255, 0)
-        fpsText.TextSize = 12
-        
-        _G.FPSFrame = fpsCounter
-        _G.FPSText = fpsText
-        _G.LastTime = tick()
-        _G.Frames = 0
-        
-        RunService.RenderStepped:Connect(function()
-            if _G.FPSText then
-                _G.Frames = _G.Frames + 1
-                if tick() - _G.LastTime >= 1 then
-                    _G.FPSText.Text = "FPS: " .. _G.Frames
-                    _G.Frames = 0
-                    _G.LastTime = tick()
+-- FPS Counter Toggle
+local FPSToggle = SettingsTab:AddToggle({
+    Name = "Show FPS",
+    Default = false,
+    Flag = "ShowFPS",
+    Save = true,
+    Callback = function(Value)
+        if Value then
+            local fpsCounter = Instance.new("ScreenGui")
+            local fpsFrame = Instance.new("Frame")
+            local fpsText = Instance.new("TextLabel")
+            
+            fpsCounter.Name = "RYEEXNZ_FPS"
+            fpsCounter.Parent = game:GetService("CoreGui")
+            fpsCounter.ResetOnSpawn = false
+            
+            fpsFrame.Parent = fpsCounter
+            fpsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            fpsFrame.BackgroundTransparency = 0.5
+            fpsFrame.BorderSizePixel = 0
+            fpsFrame.Position = UDim2.new(1, -70, 0, 10)
+            fpsFrame.Size = UDim2.new(0, 60, 0, 25)
+            
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 5)
+            corner.Parent = fpsFrame
+            
+            fpsText.Parent = fpsFrame
+            fpsText.Size = UDim2.new(1, 0, 1, 0)
+            fpsText.BackgroundTransparency = 1
+            fpsText.Font = Enum.Font.GothamBold
+            fpsText.Text = "FPS: 60"
+            fpsText.TextColor3 = Color3.fromRGB(0, 255, 0)
+            fpsText.TextSize = 12
+            
+            _G.FPSFrame = fpsCounter
+            _G.FPSText = fpsText
+            _G.LastTime = tick()
+            _G.Frames = 0
+            
+            RunService.RenderStepped:Connect(function()
+                if _G.FPSText then
+                    _G.Frames = _G.Frames + 1
+                    if tick() - _G.LastTime >= 1 then
+                        _G.FPSText.Text = "FPS: " .. _G.Frames
+                        _G.Frames = 0
+                        _G.LastTime = tick()
+                    end
                 end
+            end)
+        else
+            if _G.FPSFrame then
+                _G.FPSFrame:Destroy()
+                _G.FPSFrame = nil
             end
-        end)
-    else
-        if _G.FPSFrame then
-            _G.FPSFrame:Destroy()
-            _G.FPSFrame = nil
         end
-    end
-end)
+    end    
+})
+
+-- Config Section
+local ConfigSection = SettingsTab:AddSection({
+    Name = "Config System"
+})
+
+SettingsTab:AddLabel("Configs are saved automatically")
+SettingsTab:AddLabel("Folder: RYEEXNZConfig")
+
+-- =============================================
+-- COLOR PICKER EXAMPLE (Optional)
+-- =============================================
+-- Uncomment this if you want to add a color picker
+--[[
+local ColorPickerTab = Window:MakeTab({
+    Name = "Colors",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+ColorPickerTab:AddColorpicker({
+    Name = "ESP Color",
+    Default = Color3.fromRGB(255, 0, 0),
+    Flag = "ESPColor",
+    Save = true,
+    Callback = function(Value)
+        _G.ESPColor = Value
+        -- Update ESP colors here if needed
+    end	  
+})
+]]
+
+-- =============================================
+-- INITIALIZATION (WAJIB - Sesuai Dokumentasi)
+-- =============================================
+OrionLib:Init()
 
 -- =============================================
 -- AUTO ANTI AFK (Default ON)
@@ -404,51 +680,27 @@ wmText.Parent = wmFrame
 wmText.Size = UDim2.new(1, 0, 1, 0)
 wmText.BackgroundTransparency = 1
 wmText.Font = Enum.Font.GothamBold
-wmText.Text = "RYEEXNZ v5.0.0"
+wmText.Text = "RYEEXNZ v6.0.0 | Orion"
 wmText.TextColor3 = Color3.fromRGB(0, 200, 255)
 wmText.TextSize = 14
 
 -- =============================================
--- NOTIFICATION
+-- WELCOME NOTIFICATION
 -- =============================================
-local notification = Instance.new("ScreenGui")
-local notifFrame = Instance.new("Frame")
-local notifText = Instance.new("TextLabel")
+OrionLib:MakeNotification({
+    Name = "RYEEXNZ EXPLOIT",
+    Content = "Version 6.0.0 loaded successfully!",
+    Image = "rbxassetid://4483345998",
+    Time = 5
+})
 
-notification.Name = "RYEEXNZ_Notify"
-notification.Parent = game:GetService("CoreGui")
-notification.ResetOnSpawn = false
+OrionLib:MakeNotification({
+    Name = "Telegram",
+    Content = "t.me/Swill_Way",
+    Image = "rbxassetid://4483345998",
+    Time = 5
+})
 
-notifFrame.Parent = notification
-notifFrame.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-notifFrame.BorderSizePixel = 0
-notifFrame.Position = UDim2.new(0.5, -150, 0, -50)
-notifFrame.Size = UDim2.new(0, 300, 0, 40)
-
-local notifCorner = Instance.new("UICorner")
-notifCorner.CornerRadius = UDim.new(0, 5)
-notifCorner.Parent = notifFrame
-
-notifText.Parent = notifFrame
-notifText.Size = UDim2.new(1, 0, 1, 0)
-notifText.BackgroundTransparency = 1
-notifText.Font = Enum.Font.GothamBold
-notifText.Text = "RYEEXNZ v5.0.0 Loaded!"
-notifText.TextColor3 = Color3.fromRGB(255, 255, 255)
-notifText.TextSize = 14
-
--- Animasi notifikasi
-local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local goal = {Position = UDim2.new(0.5, -150, 0, 20)}
-local tween = TweenService:Create(notifFrame, tweenInfo, goal)
-tween:Play()
-
-wait(3)
-local goal2 = {Position = UDim2.new(0.5, -150, 0, -50)}
-local tween2 = TweenService:Create(notifFrame, tweenInfo, goal2)
-tween2:Play()
-wait(0.5)
-notification:Destroy()
-
-print("✅ RYEEXNZ EXPLOIT v5.0.0 BERHASIL DIJALANKAN!")
+print("✅ RYEEXNZ EXPLOIT v6.0.0 (Orion UI) loaded!")
 print("📱 Telegram: t.me/Swill_Way")
+print("🎯 Press F4 to toggle UI")
