@@ -1,0 +1,647 @@
+--[[ 
+    RYEEXNZ - Script Utama
+    Version: 2.0.0
+    Sistem Key: Dihapus
+]]
+
+-- Konfigurasi
+local config = {
+    version = "2.0.0",
+    scriptName = "RYEEXNZ",
+    telegram = "t.me/Swill_Way"
+}
+
+-- GUI Library
+local Library = {}
+local gui = Instance.new("ScreenGui")
+local mainFrame = Instance.new("Frame")
+local titleBar = Instance.new("Frame")
+local title = Instance.new("TextLabel")
+local closeBtn = Instance.new("TextButton")
+local minimizeBtn = Instance.new("TextButton")
+local tabs = {}
+local currentTab = nil
+local minimized = false
+local originalSize = nil
+
+-- Fungsi untuk membuat GUI
+function Library:CreateWindow(titleText)
+    gui.Name = "RYEEXNZ_Hub"
+    gui.Parent = game.CoreGui
+    gui.ResetOnSpawn = false
+    
+    mainFrame.Name = "MainFrame"
+    mainFrame.Parent = gui
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
+    mainFrame.Size = UDim2.new(0, 600, 0, 400)
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.ClipsDescendants = true
+    
+    -- Shadow effect
+    local shadow = Instance.new("Frame")
+    shadow.Name = "Shadow"
+    shadow.Parent = mainFrame
+    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.BackgroundTransparency = 0.7
+    shadow.BorderSizePixel = 0
+    shadow.Size = UDim2.new(1, 10, 1, 10)
+    shadow.Position = UDim2.new(0, -5, 0, -5)
+    shadow.ZIndex = -1
+    
+    -- Title Bar
+    titleBar.Name = "TitleBar"
+    titleBar.Parent = mainFrame
+    titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    titleBar.BorderSizePixel = 0
+    titleBar.Size = UDim2.new(1, 0, 0, 35)
+    
+    title.Name = "Title"
+    title.Parent = titleBar
+    title.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    title.BorderSizePixel = 0
+    title.Size = UDim2.new(1, -70, 1, 0)
+    title.Font = Enum.Font.GothamBold
+    title.Text = titleText .. " v" .. config.version
+    title.TextColor3 = Color3.fromRGB(0, 200, 255)
+    title.TextSize = 16
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Minimize Button
+    minimizeBtn.Name = "MinimizeBtn"
+    minimizeBtn.Parent = titleBar
+    minimizeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    minimizeBtn.BorderSizePixel = 0
+    minimizeBtn.Position = UDim2.new(1, -60, 0, 0)
+    minimizeBtn.Size = UDim2.new(0, 30, 1, 0)
+    minimizeBtn.Font = Enum.Font.GothamBold
+    minimizeBtn.Text = "−"
+    minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
+    minimizeBtn.TextSize = 20
+    minimizeBtn.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        if minimized then
+            originalSize = mainFrame.Size
+            mainFrame:TweenSize(UDim2.new(0, 600, 0, 35), "Out", "Quad", 0.3, true)
+            minimizeBtn.Text = "+"
+        else
+            mainFrame:TweenSize(originalSize or UDim2.new(0, 600, 0, 400), "Out", "Quad", 0.3, true)
+            minimizeBtn.Text = "−"
+        end
+    end)
+    
+    -- Close Button
+    closeBtn.Name = "CloseBtn"
+    closeBtn.Parent = titleBar
+    closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Position = UDim2.new(1, -30, 0, 0)
+    closeBtn.Size = UDim2.new(0, 30, 1, 0)
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.Text = "X"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+    closeBtn.TextSize = 16
+    closeBtn.MouseButton1Click:Connect(function()
+        gui:Destroy()
+    end)
+    
+    return Library
+end
+
+-- Fungsi untuk membuat tab dengan animasi
+function Library:CreateTab(tabName, icon)
+    local tabButton = Instance.new("TextButton")
+    local tabContent = Instance.new("ScrollingFrame")
+    local tabIcon = Instance.new("TextLabel")
+    
+    tabButton.Name = tabName .. "Btn"
+    tabButton.Parent = mainFrame
+    tabButton.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    tabButton.BorderSizePixel = 0
+    tabButton.Position = UDim2.new(0, #tabs * 90, 0, 35)
+    tabButton.Size = UDim2.new(0, 90, 0, 30)
+    tabButton.Font = Enum.Font.Gotham
+    tabButton.Text = "  " .. tabName
+    tabButton.TextColor3 = Color3.fromRGB(180, 180, 180)
+    tabButton.TextSize = 12
+    tabButton.TextXAlignment = Enum.TextXAlignment.Left
+    
+    tabIcon.Name = "Icon"
+    tabIcon.Parent = tabButton
+    tabIcon.BackgroundTransparency = 1
+    tabIcon.Position = UDim2.new(0, 5, 0, 5)
+    tabIcon.Size = UDim2.new(0, 20, 0, 20)
+    tabIcon.Font = Enum.Font.Gotham
+    tabIcon.Text = icon or "📁"
+    tabIcon.TextColor3 = Color3.fromRGB(0, 200, 255)
+    tabIcon.TextSize = 14
+    
+    tabContent.Name = tabName .. "Content"
+    tabContent.Parent = mainFrame
+    tabContent.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    tabContent.BorderSizePixel = 0
+    tabContent.Position = UDim2.new(0, 10, 0, 70)
+    tabContent.Size = UDim2.new(1, -20, 1, -80)
+    tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
+    tabContent.ScrollBarThickness = 6
+    tabContent.ScrollBarImageColor3 = Color3.fromRGB(0, 200, 255)
+    tabContent.Visible = (#tabs == 0)
+    tabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    
+    local tabInfo = {
+        button = tabButton,
+        content = tabContent
+    }
+    
+    table.insert(tabs, tabInfo)
+    
+    tabButton.MouseButton1Click:Connect(function()
+        for _, t in pairs(tabs) do
+            t.content.Visible = false
+            t.button.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+            t.button.TextColor3 = Color3.fromRGB(180, 180, 180)
+        end
+        tabContent.Visible = true
+        tabButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+    
+    if #tabs == 1 then
+        tabButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
+    
+    local tabAPI = {}
+    
+    -- Fungsi untuk membuat section
+    function tabAPI:CreateSection(text)
+        local section = Instance.new("Frame")
+        local sectionLabel = Instance.new("TextLabel")
+        local line = Instance.new("Frame")
+        
+        section.Name = text .. "Section"
+        section.Parent = tabContent
+        section.BackgroundTransparency = 1
+        section.Size = UDim2.new(1, 0, 0, 30)
+        
+        sectionLabel.Name = "Label"
+        sectionLabel.Parent = section
+        sectionLabel.BackgroundTransparency = 1
+        sectionLabel.Size = UDim2.new(0, 100, 1, 0)
+        sectionLabel.Font = Enum.Font.GothamBold
+        sectionLabel.Text = text
+        sectionLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+        sectionLabel.TextSize = 14
+        sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+        
+        line.Name = "Line"
+        line.Parent = section
+        line.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+        line.BorderSizePixel = 0
+        line.Position = UDim2.new(0, 110, 0.5, 0)
+        line.Size = UDim2.new(1, -120, 0, 1)
+        
+        return section
+    end
+    
+    -- Fungsi untuk membuat tombol dengan animasi
+    function tabAPI:CreateButton(text, callback)
+        local btn = Instance.new("TextButton")
+        local btnCorner = Instance.new("UICorner")
+        
+        btn.Name = text .. "Btn"
+        btn.Parent = tabContent
+        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        btn.BorderSizePixel = 0
+        btn.Size = UDim2.new(1, -10, 0, 35)
+        btn.Font = Enum.Font.Gotham
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 13
+        btn.AutoButtonColor = false
+        
+        btnCorner.CornerRadius = UDim.new(0, 4)
+        btnCorner.Parent = btn
+        
+        btn.MouseEnter:Connect(function()
+            btn:TweenSize(UDim2.new(1, -5, 0, 35), "Out", "Quad", 0.1, true)
+            btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        end)
+        
+        btn.MouseLeave:Connect(function()
+            btn:TweenSize(UDim2.new(1, -10, 0, 35), "Out", "Quad", 0.1, true)
+            btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        end)
+        
+        btn.MouseButton1Click:Connect(function()
+            btn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+            wait(0.1)
+            btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+            pcall(callback)
+        end)
+        
+        return btn
+    end
+    
+    -- Fungsi untuk membuat toggle dengan animasi
+    function tabAPI:CreateToggle(text, default, callback)
+        local toggled = default or false
+        
+        local toggleBtn = Instance.new("TextButton")
+        local toggleCorner = Instance.new("UICorner")
+        local toggleIndicator = Instance.new("Frame")
+        local indicatorCorner = Instance.new("UICorner")
+        
+        toggleBtn.Name = text .. "Toggle"
+        toggleBtn.Parent = tabContent
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        toggleBtn.BorderSizePixel = 0
+        toggleBtn.Size = UDim2.new(1, -10, 0, 35)
+        toggleBtn.Font = Enum.Font.Gotham
+        toggleBtn.Text = "   " .. text
+        toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        toggleBtn.TextSize = 13
+        toggleBtn.TextXAlignment = Enum.TextXAlignment.Left
+        toggleBtn.AutoButtonColor = false
+        
+        toggleCorner.CornerRadius = UDim.new(0, 4)
+        toggleCorner.Parent = toggleBtn
+        
+        toggleIndicator.Name = "Indicator"
+        toggleIndicator.Parent = toggleBtn
+        toggleIndicator.BackgroundColor3 = toggled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        toggleIndicator.BorderSizePixel = 0
+        toggleIndicator.Position = UDim2.new(1, -25, 0.5, -7)
+        toggleIndicator.Size = UDim2.new(0, 14, 0, 14)
+        
+        indicatorCorner.CornerRadius = UDim.new(1, 0)
+        indicatorCorner.Parent = toggleIndicator
+        
+        toggleBtn.MouseButton1Click:Connect(function()
+            toggled = not toggled
+            toggleIndicator.BackgroundColor3 = toggled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+            pcall(callback, toggled)
+        end)
+        
+        return toggleBtn
+    end
+    
+    -- Fungsi untuk membuat slider
+    function tabAPI:CreateSlider(text, min, max, default, callback)
+        local sliderFrame = Instance.new("Frame")
+        local sliderLabel = Instance.new("TextLabel")
+        local sliderValue = Instance.new("TextLabel")
+        local sliderBar = Instance.new("Frame")
+        local sliderFill = Instance.new("Frame")
+        local sliderButton = Instance.new("TextButton")
+        local sliderCorner = Instance.new("UICorner")
+        
+        sliderFrame.Name = text .. "Slider"
+        sliderFrame.Parent = tabContent
+        sliderFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        sliderFrame.BorderSizePixel = 0
+        sliderFrame.Size = UDim2.new(1, -10, 0, 50)
+        
+        sliderCorner.CornerRadius = UDim.new(0, 4)
+        sliderCorner.Parent = sliderFrame
+        
+        sliderLabel.Name = "Label"
+        sliderLabel.Parent = sliderFrame
+        sliderLabel.BackgroundTransparency = 1
+        sliderLabel.Position = UDim2.new(0, 10, 0, 5)
+        sliderLabel.Size = UDim2.new(0, 200, 0, 20)
+        sliderLabel.Font = Enum.Font.Gotham
+        sliderLabel.Text = text
+        sliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        sliderLabel.TextSize = 13
+        sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+        
+        sliderValue.Name = "Value"
+        sliderValue.Parent = sliderFrame
+        sliderValue.BackgroundTransparency = 1
+        sliderValue.Position = UDim2.new(1, -50, 0, 5)
+        sliderValue.Size = UDim2.new(0, 40, 0, 20)
+        sliderValue.Font = Enum.Font.GothamBold
+        sliderValue.Text = tostring(default)
+        sliderValue.TextColor3 = Color3.fromRGB(0, 200, 255)
+        sliderValue.TextSize = 13
+        
+        sliderBar.Name = "Bar"
+        sliderBar.Parent = sliderFrame
+        sliderBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        sliderBar.BorderSizePixel = 0
+        sliderBar.Position = UDim2.new(0, 10, 0, 30)
+        sliderBar.Size = UDim2.new(1, -20, 0, 10)
+        
+        sliderFill.Name = "Fill"
+        sliderFill.Parent = sliderBar
+        sliderFill.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+        sliderFill.BorderSizePixel = 0
+        sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+        
+        sliderButton.Name = "Button"
+        sliderButton.Parent = sliderBar
+        sliderButton.BackgroundTransparency = 1
+        sliderButton.Size = UDim2.new(1, 0, 1, 0)
+        sliderButton.Text = ""
+        
+        local dragging = false
+        local value = default
+        
+        sliderButton.MouseButton1Down:Connect(function()
+            dragging = true
+        end)
+        
+        game:GetService("UserInputService").InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+        
+        game:GetService("RunService").RenderStepped:Connect(function()
+            if dragging then
+                local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+                local barPos, barSize = sliderBar.AbsolutePosition, sliderBar.AbsoluteSize
+                local relativeX = math.clamp(mousePos.X - barPos.X, 0, barSize.X)
+                local percent = relativeX / barSize.X
+                value = min + (max - min) * percent
+                sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+                sliderValue.Text = tostring(math.floor(value))
+                pcall(callback, value)
+            end
+        end)
+        
+        return sliderFrame
+    end
+    
+    return tabAPI
+end
+
+-- Fungsi untuk notifikasi
+local function ShowNotification(msg, duration, type)
+    duration = duration or 3
+    type = type or "info"
+    
+    local colors = {
+        info = Color3.fromRGB(0, 200, 255),
+        success = Color3.fromRGB(0, 255, 0),
+        error = Color3.fromRGB(255, 0, 0),
+        warning = Color3.fromRGB(255, 255, 0)
+    }
+    
+    local notif = Instance.new("Frame")
+    local notifCorner = Instance.new("UICorner")
+    local notifText = Instance.new("TextLabel")
+    local notifIcon = Instance.new("TextLabel")
+    
+    notif.Name = "Notification"
+    notif.Parent = game.CoreGui
+    notif.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    notif.BorderSizePixel = 0
+    notif.Position = UDim2.new(0.5, -150, 0, -50)
+    notif.Size = UDim2.new(0, 300, 0, 50)
+    notif.BackgroundTransparency = 0.1
+    notif.ZIndex = 10
+    
+    notifCorner.CornerRadius = UDim.new(0, 6)
+    notifCorner.Parent = notif
+    
+    notifIcon.Name = "Icon"
+    notifIcon.Parent = notif
+    notifIcon.BackgroundTransparency = 1
+    notifIcon.Position = UDim2.new(0, 10, 0, 10)
+    notifIcon.Size = UDim2.new(0, 30, 0, 30)
+    notifIcon.Font = Enum.Font.GothamBold
+    notifIcon.Text = type == "info" and "ℹ️" or type == "success" and "✅" or type == "error" and "❌" or "⚠️"
+    notifIcon.TextColor3 = colors[type]
+    notifIcon.TextSize = 20
+    
+    notifText.Name = "Text"
+    notifText.Parent = notif
+    notifText.BackgroundTransparency = 1
+    notifText.Position = UDim2.new(0, 50, 0, 0)
+    notifText.Size = UDim2.new(1, -60, 1, 0)
+    notifText.Font = Enum.Font.Gotham
+    notifText.Text = msg
+    notifText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notifText.TextSize = 14
+    notifText.TextWrapped = true
+    
+    notif:TweenPosition(UDim2.new(0.5, -150, 0, 20), "Out", "Quad", 0.5, true)
+    
+    wait(duration)
+    notif:TweenPosition(UDim2.new(0.5, -150, 0, -50), "Out", "Quad", 0.5, true)
+    wait(0.5)
+    notif:Destroy()
+end
+
+-- Fungsi untuk watermark
+local function CreateWatermark()
+    local watermark = Instance.new("TextLabel")
+    local watermarkCorner = Instance.new("UICorner")
+    
+    watermark.Name = "Watermark"
+    watermark.Parent = game.CoreGui
+    watermark.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    watermark.BackgroundTransparency = 0.3
+    watermark.BorderSizePixel = 0
+    watermark.Position = UDim2.new(0, 10, 1, -40)
+    watermark.Size = UDim2.new(0, 150, 0, 30)
+    watermark.Font = Enum.Font.GothamBold
+    watermark.Text = "RYEEXNZ v" .. config.version
+    watermark.TextColor3 = Color3.fromRGB(0, 200, 255)
+    watermark.TextSize = 14
+    
+    watermarkCorner.CornerRadius = UDim.new(0, 4)
+    watermarkCorner.Parent = watermark
+    
+    -- Animasi fade in/out
+    watermark.BackgroundTransparency = 0.7
+    wait(2)
+    watermark.BackgroundTransparency = 0.3
+end
+
+-- Inisialisasi GUI
+local win = Library:CreateWindow("RYEEXNZ HUB")
+
+-- Tab Player
+local playerTab = Library:CreateTab("Player", "👤")
+playerTab:CreateSection("Movement")
+playerTab:CreateButton("Infinity Jump", function()
+    local player = game.Players.LocalPlayer
+    local userInput = game:GetService("UserInputService")
+    local jumping = false
+    
+    userInput.JumpRequest:Connect(function()
+        if jumping then
+            player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            wait(0.1)
+            player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+    
+    jumping = true
+    ShowNotification("Infinity Jump Activated!", 2, "success")
+end)
+
+playerTab:CreateToggle("Speed Boost", false, function(state)
+    local player = game.Players.LocalPlayer
+    if state then
+        player.Character.Humanoid.WalkSpeed = 50
+        ShowNotification("Speed Boost: ON", 2, "success")
+    else
+        player.Character.Humanoid.WalkSpeed = 16
+        ShowNotification("Speed Boost: OFF", 2, "info")
+    end
+end)
+
+playerTab:CreateToggle("Jump Boost", false, function(state)
+    local player = game.Players.LocalPlayer
+    if state then
+        player.Character.Humanoid.JumpPower = 100
+        ShowNotification("Jump Boost: ON", 2, "success")
+    else
+        player.Character.Humanoid.JumpPower = 50
+        ShowNotification("Jump Boost: OFF", 2, "info")
+    end
+end)
+
+playerTab:CreateSlider("WalkSpeed", 16, 120, 16, function(value)
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = value
+    end
+end)
+
+-- Tab ESP
+local espTab = Library:CreateTab("ESP", "👁️")
+espTab:CreateSection("Visuals")
+
+espTab:CreateToggle("Player ESP", false, function(state)
+    if state then
+        for _, v in pairs(game.Players:GetPlayers()) do
+            if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESP_" .. v.Name
+                highlight.Parent = v.Character
+                highlight.FillColor = Color3.fromRGB(255, 50, 50)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.FillTransparency = 0.5
+            end
+        end
+        ShowNotification("Player ESP Enabled", 2, "success")
+    else
+        for _, v in pairs(game.Players:GetPlayers()) do
+            if v.Character and v.Character:FindFirstChild("ESP_" .. v.Name) then
+                v.Character["ESP_" .. v.Name]:Destroy()
+            end
+        end
+        ShowNotification("Player ESP Disabled", 2, "info")
+    end
+end)
+
+espTab:CreateToggle("Chams", false, function(state)
+    -- Implementasi Chams sederhana
+    ShowNotification("Chams feature coming soon!", 2, "warning")
+end)
+
+-- Tab Misc
+local miscTab = Library:CreateTab("Misc", "⚙️")
+miscTab:CreateSection("Utilities")
+
+miscTab:CreateButton("Teleport to Spawn", function()
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
+        ShowNotification("Teleported to Spawn!", 2, "success")
+    end
+end)
+
+miscTab:CreateButton("Copy Telegram Link", function()
+    setclipboard(config.telegram)
+    ShowNotification("Telegram link copied!", 2, "success")
+end)
+
+miscTab:CreateToggle("Anti AFK", true, function(state)
+    if state then
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local VirtualUser = game:GetService("VirtualUser")
+        
+        LocalPlayer.Idled:Connect(function()
+            VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+            wait(1)
+            VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        end)
+        ShowNotification("Anti AFK Enabled", 2, "success")
+    end
+end)
+
+miscTab:CreateButton("Rejoin Game", function()
+    local ts = game:GetService("TeleportService")
+    local p = game:GetService("Players").LocalPlayer
+    ts:Teleport(game.PlaceId, p)
+end)
+
+miscTab:CreateButton("Server Hop", function()
+    local HttpService = game:GetService("HttpService")
+    local function getServers()
+        local success, result = pcall(function()
+            return game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100")
+        end)
+        if success then
+            return HttpService:JSONDecode(result).data
+        end
+        return {}
+    end
+    
+    local servers = getServers()
+    for _, server in pairs(servers) do
+        if server.playing < server.maxPlayers and server.id ~= game.JobId then
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id, game.Players.LocalPlayer)
+            break
+        end
+    end
+end)
+
+-- Tab Settings
+local settingsTab = Library:CreateTab("Settings", "🔧")
+settingsTab:CreateSection("Interface")
+
+settingsTab:CreateButton("Destroy GUI", function()
+    gui:Destroy()
+    ShowNotification("GUI Destroyed", 2, "info")
+end)
+
+settingsTab:CreateButton("Toggle UI", function()
+    mainFrame.Visible = not mainFrame.Visible
+end)
+
+-- Anti AFK default
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local VirtualUser = game:GetService("VirtualUser")
+
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    wait(1)
+    VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+end)
+
+-- Watermark
+CreateWatermark()
+
+-- Welcome notification
+ShowNotification("RYEEXNZ v" .. config.version .. " Loaded!", 3, "success")
+ShowNotification("Telegram: " .. config.telegram, 3, "info")
+
+-- Auto-save settings (sederhana)
+local function saveSettings()
+    -- Implementasi save settings jika diperlukan
+end
+
+local function loadSettings()
+    -- Implementasi load settings jika diperlukan
+end
