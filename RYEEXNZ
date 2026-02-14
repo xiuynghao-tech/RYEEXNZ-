@@ -1,6 +1,8 @@
 --[[ 
-    RYEENZY EXPLOIT - FULL VERSION
-    Version: 2.0.0
+    THE FORGE SCRIPT - Rayfield UI Version
+    Game: The Forge [BETA]
+    Version: 1.0.0
+    Fitur: Auto Mine, Auto Forge, Auto Combat, ESP, Teleport, dll
     Telegram: t.me/Swill_Way
 ]]
 
@@ -9,15 +11,15 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Create Window
 local Window = Rayfield:CreateWindow({
-    Name = "RYEENZY EXPLOIT v2.0.0",
-    LoadingTitle = "Loading RYEENZY...",
-    LoadingSubtitle = "by RYEENZY TEAM",
+    Name = "🔨 THE FORGE SCRIPT v1.0.0",
+    LoadingTitle = "Loading The Forge Script...",
+    LoadingSubtitle = "by RYEEXNZ",
     Theme = "Default",
     ToggleUIKeybind = "F4",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "RYEENZYConfig",
-        FileName = "RYEENZY"
+        FolderName = "TheForgeConfig",
+        FileName = "TheForge"
     }
 })
 
@@ -26,72 +28,377 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local Camera = Workspace.CurrentCamera
 
--- =============================================
--- MAIN TAB (FITUR UTAMA)
--- =============================================
-local MainTab = Window:CreateTab("Main", "rbxassetid://4483345998")
+-- Variabel Global
+local autoMine = false
+local autoForge = false
+local autoCombat = false
+local oreESP = false
+local playerESP = false
+local autoSell = false
+local autoPotion = false
+local selectedOre = "All Ores"
+local selectedMob = "All Mobs"
 
--- Auto Farm Section
-local AutoFarmSection = MainTab:CreateSection("Auto Farm")
+-- =============================================
+-- FUNGSI UTAMA THE FORGE
+-- =============================================
 
-MainTab:CreateToggle({
-    Name = "Auto Farm (Universal)",
+-- Fungsi mendapatkan ore terdekat
+local function getNearestOre()
+    local nearest = nil
+    local shortestDistance = math.huge
+    
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("BasePart") and (v.Name:lower():find("ore") or v.Name:lower():find("rock") or v.Name:lower():find("stone")) then
+            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - v.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                nearest = v
+            end
+        end
+    end
+    return nearest
+end
+
+-- Fungsi mendapatkan mob terdekat
+local function getNearestMob()
+    local nearest = nil
+    local shortestDistance = math.huge
+    
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("Model") and (v.Name:lower():find("zombie") or v.Name:lower():find("skeleton") or v.Name:lower():find("enemy") or v.Name:lower():find("mob")) then
+            if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
+                local distance = (LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    nearest = v
+                end
+            end
+        end
+    end
+    return nearest
+end
+
+-- Auto Mine Loop
+local function startAutoMine()
+    spawn(function()
+        while autoMine do
+            wait(0.5)
+            local ore = getNearestOre()
+            if ore and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                -- Move to ore
+                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(ore.Position.X, ore.Position.Y + 3, ore.Position.Z)
+                wait(0.3)
+                
+                -- Simulate mining (click)
+                virtualInput:SendMouseButtonEvent(ore.Position.X, ore.Position.Y, 0, true)
+                wait(0.1)
+                virtualInput:SendMouseButtonEvent(ore.Position.X, ore.Position.Y, 0, false)
+            end
+        end
+    end)
+end
+
+-- Auto Combat Loop
+local function startAutoCombat()
+    spawn(function()
+        while autoCombat do
+            wait(0.3)
+            local mob = getNearestMob()
+            if mob and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                -- Move to mob
+                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mob.HumanoidRootPart.Position.X, mob.HumanoidRootPart.Position.Y + 2, mob.HumanoidRootPart.Position.Z)
+                wait(0.2)
+                
+                -- Attack
+                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true)
+                wait(0.1)
+                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, false)
+            end
+        end
+    end)
+end
+
+-- =============================================
+-- AUTO FARM TAB
+-- =============================================
+local FarmTab = Window:CreateTab("Auto Farm", "rbxassetid://4483345998")
+
+-- Mining Section
+local MiningSection = FarmTab:CreateSection("Mining")
+
+FarmTab:CreateToggle({
+    Name = "Auto Mine",
     CurrentValue = false,
-    Flag = "AutoFarm",
+    Flag = "AutoMine",
     Callback = function(Value)
-        _G.AutoFarm = Value
-        Rayfield:Notify("Auto Farm " .. (Value and "Activated" or "Deactivated"))
+        autoMine = Value
+        if autoMine then
+            startAutoMine()
+            Rayfield:Notify("Auto Mine Started")
+        end
     end
 })
 
-MainTab:CreateToggle({
-    Name = "Auto Collect Drops",
-    CurrentValue = false,
-    Flag = "AutoCollect",
-    Callback = function(Value)
-        _G.AutoCollect = Value
+FarmTab:CreateDropdown({
+    Name = "Select Ore Type",
+    Options = {"All Ores", "Coal", "Iron", "Gold", "Diamond", "Mithril"},
+    CurrentOption = "All Ores",
+    Flag = "OreType",
+    Callback = function(Option)
+        selectedOre = Option
     end
 })
 
-MainTab:CreateSlider({
-    Name = "Farm Range",
+FarmTab:CreateSlider({
+    Name = "Mining Range",
     Range = {10, 100},
     Increment = 5,
     Suffix = "Studs",
     CurrentValue = 30,
-    Flag = "FarmRange",
+    Flag = "MiningRange",
+})
+
+-- Forging Section
+local ForgingSection = FarmTab:CreateSection("Forging")
+
+FarmTab:CreateToggle({
+    Name = "Auto Forge",
+    CurrentValue = false,
+    Flag = "AutoForge",
+    Callback = function(Value)
+        autoForge = Value
+        Rayfield:Notify("Auto Forge " .. (Value and "Started" or "Stopped"))
+    end
+})
+
+FarmTab:CreateToggle({
+    Name = "Auto Melt",
+    CurrentValue = false,
+    Flag = "AutoMelt",
+})
+
+FarmTab:CreateToggle({
+    Name = "Auto Hammer",
+    CurrentValue = false,
+    Flag = "AutoHammer",
+})
+
+FarmTab:CreateToggle({
+    Name = "Auto Mold",
+    CurrentValue = false,
+    Flag = "AutoMold",
 })
 
 -- Combat Section
-local CombatSection = MainTab:CreateSection("Combat")
+local CombatSection = FarmTab:CreateSection("Combat")
 
-MainTab:CreateToggle({
-    Name = "Aimbot",
+FarmTab:CreateToggle({
+    Name = "Auto Kill Mobs",
     CurrentValue = false,
-    Flag = "Aimbot",
+    Flag = "AutoCombat",
+    Callback = function(Value)
+        autoCombat = Value
+        if autoCombat then
+            startAutoCombat()
+            Rayfield:Notify("Auto Combat Started")
+        end
+    end
 })
 
-MainTab:CreateToggle({
-    Name = "Silent Aim",
-    CurrentValue = false,
-    Flag = "SilentAim",
+FarmTab:CreateDropdown({
+    Name = "Target Mobs",
+    Options = {"All Mobs", "Zombies", "Skeletons", "Bosses"},
+    CurrentOption = "All Mobs",
+    Flag = "MobTarget",
+    Callback = function(Option)
+        selectedMob = Option
+    end
 })
 
-MainTab:CreateToggle({
-    Name = "ESP Players",
+FarmTab:CreateToggle({
+    Name = "Auto Parry",
     CurrentValue = false,
-    Flag = "ESPToggle",
+    Flag = "AutoParry",
 })
 
-MainTab:CreateToggle({
-    Name = "Wallhack",
+-- =============================================
+-- ESP TAB
+-- =============================================
+local ESPTab = Window:CreateTab("ESP", "rbxassetid://4483345998")
+
+-- Ore ESP Section
+local OreESPSection = ESPTab:CreateSection("Ore ESP")
+
+ESPTab:CreateToggle({
+    Name = "Ore ESP",
     CurrentValue = false,
-    Flag = "Wallhack",
+    Flag = "OreESP",
+    Callback = function(Value)
+        oreESP = Value
+        if oreESP then
+            spawn(function()
+                while oreESP do
+                    wait(1)
+                    for _, v in pairs(Workspace:GetDescendants()) do
+                        if v:IsA("BasePart") and (v.Name:lower():find("ore") or v.Name:lower():find("rock")) then
+                            if not v:FindFirstChild("OreESP_Highlight") then
+                                local highlight = Instance.new("Highlight")
+                                highlight.Name = "OreESP_Highlight"
+                                highlight.Parent = v
+                                highlight.FillColor = Color3.fromRGB(0, 255, 255)
+                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                highlight.FillTransparency = 0.3
+                            end
+                        end
+                    end
+                end
+            end)
+        else
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:FindFirstChild("OreESP_Highlight") then
+                    v.OreESP_Highlight:Destroy()
+                end
+            end
+        end
+    end
+})
+
+ESPTab:CreateColorpicker({
+    Name = "Ore ESP Color",
+    CurrentValue = Color3.fromRGB(0, 255, 255),
+    Flag = "OreESPColor",
+})
+
+-- Mob ESP Section
+local MobESPSection = ESPTab:CreateSection("Mob ESP")
+
+ESPTab:CreateToggle({
+    Name = "Mob ESP",
+    CurrentValue = false,
+    Flag = "MobESP",
+    Callback = function(Value)
+        if Value then
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:IsA("Model") and (v.Name:lower():find("zombie") or v.Name:lower():find("skeleton")) then
+                    if not v:FindFirstChild("MobESP_Highlight") then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "MobESP_Highlight"
+                        highlight.Parent = v
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.FillTransparency = 0.3
+                    end
+                end
+            end
+        else
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:FindFirstChild("MobESP_Highlight") then
+                    v.MobESP_Highlight:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- Player ESP Section
+local PlayerESPSection = ESPTab:CreateSection("Player ESP")
+
+ESPTab:CreateToggle({
+    Name = "Player ESP",
+    CurrentValue = false,
+    Flag = "PlayerESP",
+    Callback = function(Value)
+        if Value then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    if not player.Character:FindFirstChild("PlayerESP_Highlight") then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "PlayerESP_Highlight"
+                        highlight.Parent = player.Character
+                        highlight.FillColor = Color3.fromRGB(255, 255, 0)
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.FillTransparency = 0.5
+                    end
+                end
+            end
+        else
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("PlayerESP_Highlight") then
+                    player.Character.PlayerESP_Highlight:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- =============================================
+-- TELEPORT TAB
+-- =============================================
+local TeleportTab = Window:CreateTab("Teleport", "rbxassetid://4483345998")
+
+-- Locations Section
+local LocationsSection = TeleportTab:CreateSection("Locations")
+
+local locations = {
+    ["Spawn"] = CFrame.new(0, 50, 0),
+    ["Mines"] = CFrame.new(100, 20, 50),
+    ["Forge"] = CFrame.new(-50, 20, 100),
+    ["Shop"] = CFrame.new(200, 20, -50),
+    ["Arena"] = CFrame.new(-150, 30, -100)
+}
+
+local locationNames = {}
+for name, _ in pairs(locations) do
+    table.insert(locationNames, name)
+end
+
+TeleportTab:CreateDropdown({
+    Name = "Select Location",
+    Options = locationNames,
+    CurrentOption = "Spawn",
+    Flag = "SelectedLocation",
+    Callback = function(Option)
+        _G.SelectedLoc = Option
+    end
+})
+
+TeleportTab:CreateButton({
+    Name = "Teleport to Selected",
+    Callback = function()
+        if _G.SelectedLoc and locations[_G.SelectedLoc] and LocalPlayer.Character then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = locations[_G.SelectedLoc]
+            Rayfield:Notify("Teleported to " .. _G.SelectedLoc)
+        end
+    end
+})
+
+-- Click Teleport Section
+local ClickTPSection = TeleportTab:CreateSection("Click Teleport")
+
+TeleportTab:CreateToggle({
+    Name = "Click Teleport",
+    CurrentValue = false,
+    Flag = "ClickTP",
+    Callback = function(Value)
+        _G.ClickTP = Value
+        if _G.ClickTP then
+            Mouse.Button1Down:Connect(function()
+                if _G.ClickTP and LocalPlayer.Character then
+                    local target = Mouse.Hit
+                    if target then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(target.X, target.Y + 3, target.Z)
+                    end
+                end
+            end)
+        end
+    end
 })
 
 -- =============================================
@@ -99,12 +406,12 @@ MainTab:CreateToggle({
 -- =============================================
 local PlayerTab = Window:CreateTab("Player", "rbxassetid://4483345998")
 
--- Movement Section
-local MovementSection = PlayerTab:CreateSection("Movement")
+-- Stats Section
+local StatsSection = PlayerTab:CreateSection("Stats")
 
 PlayerTab:CreateSlider({
     Name = "WalkSpeed",
-    Range = {16, 500},
+    Range = {16, 250},
     Increment = 1,
     Suffix = "Speed",
     CurrentValue = 16,
@@ -118,7 +425,7 @@ PlayerTab:CreateSlider({
 
 PlayerTab:CreateSlider({
     Name = "JumpPower",
-    Range = {50, 500},
+    Range = {50, 250},
     Increment = 1,
     Suffix = "Power",
     CurrentValue = 50,
@@ -130,36 +437,11 @@ PlayerTab:CreateSlider({
     end
 })
 
-PlayerTab:CreateSlider({
-    Name = "Gravity",
-    Range = {0, 500},
-    Increment = 1,
-    Suffix = "Force",
-    CurrentValue = 196.2,
-    Flag = "Gravity",
-    Callback = function(Value)
-        Workspace.Gravity = Value
-    end
-})
+-- Utility Section
+local UtilitySection = PlayerTab:CreateSection("Utility")
 
 PlayerTab:CreateToggle({
-    Name = "Infinity Jump",
-    CurrentValue = false,
-    Flag = "InfJump",
-    Callback = function(Value)
-        _G.InfJump = Value
-        if _G.InfJump then
-            UserInputService.JumpRequest:Connect(function()
-                if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                    LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                end
-            end)
-        end
-    end
-})
-
-PlayerTab:CreateToggle({
-    Name = "NoClip (Tembus Dinding)",
+    Name = "NoClip",
     CurrentValue = false,
     Flag = "NoClip",
     Callback = function(Value)
@@ -209,293 +491,21 @@ PlayerTab:CreateToggle({
     end
 })
 
--- Character Section
-local CharacterSection = PlayerTab:CreateSection("Character")
+PlayerTab:CreateToggle({
+    Name = "Auto Potion",
+    CurrentValue = false,
+    Flag = "AutoPotion",
+    Callback = function(Value)
+        autoPotion = Value
+    end
+})
 
 PlayerTab:CreateButton({
     Name = "Reset Character",
     Callback = function()
         if LocalPlayer.Character then
             LocalPlayer.Character:BreakJoints()
-            Rayfield:Notify("Character Reset")
         end
-    end
-})
-
-PlayerTab:CreateButton({
-    Name = "God Mode (Refresh)",
-    Callback = function()
-        Rayfield:Notify("God Mode Activated (if supported)")
-    end
-})
-
--- =============================================
--- ESP TAB
--- =============================================
-local ESPTab = Window:CreateTab("ESP", "rbxassetid://4483345998")
-
--- Player ESP Section
-local PlayerESPSection = ESPTab:CreateSection("Player ESP")
-
-ESPTab:CreateToggle({
-    Name = "Enable Player ESP",
-    CurrentValue = false,
-    Flag = "PlayerESP",
-    Callback = function(Value)
-        if Value then
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    if not player.Character:FindFirstChild("PlayerESP_Highlight") then
-                        local highlight = Instance.new("Highlight")
-                        highlight.Name = "PlayerESP_Highlight"
-                        highlight.Parent = player.Character
-                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                        highlight.FillTransparency = 0.5
-                    end
-                end
-            end
-        else
-            for _, player in pairs(Players:GetPlayers()) do
-                if player.Character and player.Character:FindFirstChild("PlayerESP_Highlight") then
-                    player.Character.PlayerESP_Highlight:Destroy()
-                end
-            end
-        end
-    end
-})
-
-ESPTab:CreateToggle({
-    Name = "Name ESP",
-    CurrentValue = false,
-    Flag = "NameESP",
-    Callback = function(Value)
-        if Value then
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-                    if not player.Character.Head:FindFirstChild("NameESP") then
-                        local billboard = Instance.new("BillboardGui")
-                        local textLabel = Instance.new("TextLabel")
-                        
-                        billboard.Name = "NameESP"
-                        billboard.Parent = player.Character.Head
-                        billboard.Size = UDim2.new(0, 100, 0, 30)
-                        billboard.StudsOffset = Vector3.new(0, 2, 0)
-                        billboard.AlwaysOnTop = true
-                        
-                        textLabel.Parent = billboard
-                        textLabel.Size = UDim2.new(1, 0, 1, 0)
-                        textLabel.BackgroundTransparency = 1
-                        textLabel.Text = player.Name
-                        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                        textLabel.TextStrokeTransparency = 0
-                        textLabel.TextSize = 14
-                    end
-                end
-            end
-        else
-            for _, player in pairs(Players:GetPlayers()) do
-                if player.Character and player.Character:FindFirstChild("Head") then
-                    if player.Character.Head:FindFirstChild("NameESP") then
-                        player.Character.Head.NameESP:Destroy()
-                    end
-                end
-            end
-        end
-    end
-})
-
-ESPTab:CreateToggle({
-    Name = "Tracers",
-    CurrentValue = false,
-    Flag = "Tracers",
-})
-
-ESPTab:CreateColorpicker({
-    Name = "ESP Color",
-    CurrentValue = Color3.fromRGB(255, 0, 0),
-    Flag = "ESPColor",
-})
-
--- Object ESP Section
-local ObjectESPSection = ESPTab:CreateSection("Object ESP")
-
-ESPTab:CreateToggle({
-    Name = "Chest ESP",
-    CurrentValue = false,
-    Flag = "ChestESP",
-})
-
-ESPTab:CreateToggle({
-    Name = "Item ESP",
-    CurrentValue = false,
-    Flag = "ItemESP",
-})
-
-ESPTab:CreateToggle({
-    Name = "NPC ESP",
-    CurrentValue = false,
-    Flag = "NPCCESP",
-})
-
--- =============================================
--- TELEPORT TAB
--- =============================================
-local TeleportTab = Window:CreateTab("Teleport", "rbxassetid://4483345998")
-
--- Teleport Options
-local TeleportSection = TeleportTab:CreateSection("Teleport Options")
-
-TeleportTab:CreateToggle({
-    Name = "Click Teleport",
-    CurrentValue = false,
-    Flag = "ClickTP",
-    Callback = function(Value)
-        _G.ClickTP = Value
-        if _G.ClickTP then
-            Mouse.Button1Down:Connect(function()
-                if _G.ClickTP and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    local target = Mouse.Hit
-                    if target then
-                        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(target.X, target.Y + 3, target.Z)
-                    end
-                end
-            end)
-        end
-    end
-})
-
-TeleportTab:CreateButton({
-    Name = "Teleport to Spawn",
-    Callback = function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
-            Rayfield:Notify("Teleported to Spawn")
-        end
-    end
-})
-
-TeleportTab:CreateButton({
-    Name = "Teleport to Mouse",
-    Callback = function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local target = Mouse.Hit
-            if target then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(target.X, target.Y + 3, target.Z)
-                Rayfield:Notify("Teleported to Mouse")
-            end
-        end
-    end
-})
-
--- Player Teleport Section
-local PlayerTeleportSection = TeleportTab:CreateSection("Teleport to Player")
-
--- Create dropdown for players
-local playerList = {}
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        table.insert(playerList, player.Name)
-    end
-end
-
-local PlayerDropdown = TeleportTab:CreateDropdown({
-    Name = "Select Player",
-    Options = playerList,
-    CurrentOption = playerList[1],
-    Flag = "SelectedPlayer",
-    Callback = function(Option)
-        _G.SelectedPlayer = Option
-    end
-})
-
-TeleportTab:CreateButton({
-    Name = "Teleport to Selected Player",
-    Callback = function()
-        if _G.SelectedPlayer then
-            local target = Players:FindFirstChild(_G.SelectedPlayer)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                Rayfield:Notify("Teleported to " .. _G.SelectedPlayer)
-            end
-        end
-    end
-})
-
--- =============================================
--- WORLD TAB
--- =============================================
-local WorldTab = Window:CreateTab("World", "rbxassetid://4483345998")
-
--- Environment Section
-local EnvironmentSection = WorldTab:CreateSection("Environment")
-
-WorldTab:CreateToggle({
-    Name = "Fullbright",
-    CurrentValue = false,
-    Flag = "Fullbright",
-    Callback = function(Value)
-        if Value then
-            game:GetService("Lighting").Ambient = Color3.fromRGB(255, 255, 255)
-            game:GetService("Lighting").Brightness = 2
-        else
-            game:GetService("Lighting").Ambient = Color3.fromRGB(0, 0, 0)
-            game:GetService("Lighting").Brightness = 1
-        end
-    end
-})
-
-WorldTab:CreateSlider({
-    Name = "Time",
-    Range = {0, 24},
-    Increment = 0.5,
-    Suffix = "Hours",
-    CurrentValue = 12,
-    Flag = "Time",
-    Callback = function(Value)
-        game:GetService("Lighting").ClockTime = Value
-    end
-})
-
-WorldTab:CreateToggle({
-    Name = "No Fog",
-    CurrentValue = false,
-    Flag = "NoFog",
-    Callback = function(Value)
-        if Value then
-            game:GetService("Lighting").FogEnd = 100000
-        else
-            game:GetService("Lighting").FogEnd = 100000
-        end
-    end
-})
-
--- Map Section
-local MapSection = WorldTab:CreateSection("Map")
-
-WorldTab:CreateButton({
-    Name = "Clear Map (Remove Parts)",
-    Callback = function()
-        local count = 0
-        for _, v in pairs(Workspace:GetDescendants()) do
-            if v:IsA("Part") and not v.Anchored then
-                v:Destroy()
-                count = count + 1
-            end
-        end
-        Rayfield:Notify("Removed " .. count .. " parts")
-    end
-})
-
-WorldTab:CreateButton({
-    Name = "Delete All Debris",
-    Callback = function()
-        for _, v in pairs(Workspace:GetDescendants()) do
-            if v:IsA("Part") and (v.Name:lower():find("debris") or v.Name:lower():find("glass") or v.Name:lower():find("trash")) then
-                v:Destroy()
-            end
-        end
-        Rayfield:Notify("Debris cleared")
     end
 })
 
@@ -549,55 +559,33 @@ MiscTab:CreateToggle({
     end
 })
 
--- Utility Section
-local UtilitySection = MiscTab:CreateSection("Utility")
+-- Auto Sell Section
+local AutoSellSection = MiscTab:CreateSection("Auto Sell")
 
+MiscTab:CreateToggle({
+    Name = "Auto Sell Items",
+    CurrentValue = false,
+    Flag = "AutoSell",
+    Callback = function(Value)
+        autoSell = Value
+    end
+})
+
+MiscTab:CreateSlider({
+    Name = "Sell Interval",
+    Range = {30, 300},
+    Increment = 10,
+    Suffix = "Seconds",
+    CurrentValue = 60,
+    Flag = "SellInterval",
+})
+
+-- Telegram
 MiscTab:CreateButton({
     Name = "Copy Telegram",
     Callback = function()
         setclipboard("t.me/Swill_Way")
         Rayfield:Notify("Telegram link copied!")
-    end
-})
-
-MiscTab:CreateButton({
-    Name = "Get Player Info",
-    Callback = function()
-        local info = string.format(
-            "Name: %s\nUserID: %d\nAccount Age: %d",
-            LocalPlayer.Name,
-            LocalPlayer.UserId,
-            LocalPlayer.AccountAge
-        )
-        Rayfield:Notify({
-            Title = "Player Info",
-            Content = info,
-            Duration = 5
-        })
-    end
-})
-
--- Script Loader Section
-local ScriptSection = MiscTab:CreateSection("Script Loader")
-
-MiscTab:CreateButton({
-    Name = "Load Infinite Yield",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-    end
-})
-
-MiscTab:CreateButton({
-    Name = "Load Dex Explorer",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
-    end
-})
-
-MiscTab:CreateButton({
-    Name = "Load CMD-X",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/source"))()
     end
 })
 
@@ -636,7 +624,7 @@ SettingsTab:CreateToggle({
             local fpsFrame = Instance.new("Frame")
             local fpsText = Instance.new("TextLabel")
             
-            fpsCounter.Name = "RYEENZY_FPS"
+            fpsCounter.Name = "TheForge_FPS"
             fpsCounter.Parent = game:GetService("CoreGui")
             fpsCounter.ResetOnSpawn = false
             
@@ -655,4 +643,150 @@ SettingsTab:CreateToggle({
             fpsText.Size = UDim2.new(1, 0, 1, 0)
             fpsText.BackgroundTransparency = 1
             fpsText.Font = Enum.Font.GothamBold
- 
+            fpsText.Text = "FPS: 60"
+            fpsText.TextColor3 = Color3.fromRGB(0, 255, 0)
+            fpsText.TextSize = 12
+            
+            _G.FPSFrame = fpsCounter
+            _G.FPSText = fpsText
+            _G.LastTime = tick()
+            _G.Frames = 0
+            
+            RunService.RenderStepped:Connect(function()
+                if _G.FPSText then
+                    _G.Frames = _G.Frames + 1
+                    if tick() - _G.LastTime >= 1 then
+                        _G.FPSText.Text = "FPS: " .. _G.Frames
+                        _G.Frames = 0
+                        _G.LastTime = tick()
+                    end
+                end
+            end)
+        else
+            if _G.FPSFrame then
+                _G.FPSFrame:Destroy()
+                _G.FPSFrame = nil
+            end
+        end
+    end
+})
+
+-- =============================================
+-- DRAG & RESIZE HANDLE (TAMBAHAN)
+-- =============================================
+
+-- Tunggu window muncul
+wait(1)
+local rayfieldWindow = nil
+for _, v in pairs(game:GetService("CoreGui"):GetDescendants()) do
+    if v:IsA("Frame") and v.Name:find("Rayfield") then
+        rayfieldWindow = v
+        break
+    end
+end
+
+if rayfieldWindow then
+    -- Buat handle resize
+    local resizeHandle = Instance.new("Frame")
+    resizeHandle.Name = "ResizeHandle"
+    resizeHandle.Parent = rayfieldWindow
+    resizeHandle.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+    resizeHandle.BackgroundTransparency = 0.7
+    resizeHandle.BorderSizePixel = 0
+    resizeHandle.Position = UDim2.new(1, -15, 1, -15)
+    resizeHandle.Size = UDim2.new(0, 15, 0, 15)
+    resizeHandle.ZIndex = 10
+    resizeHandle.Cursor = "SizeAll"
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 3)
+    corner.Parent = resizeHandle
+    
+    local icon = Instance.new("TextLabel")
+    icon.Parent = resizeHandle
+    icon.BackgroundTransparency = 1
+    icon.Size = UDim2.new(1, 0, 1, 0)
+    icon.Font = Enum.Font.GothamBold
+    icon.Text = "◢"
+    icon.TextColor3 = Color3.fromRGB(255, 255, 255)
+    icon.TextSize = 12
+    
+    -- Resize functionality
+    local resizing = false
+    local resizeStart, startSize
+    
+    resizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizing = true
+            resizeStart = input.Position
+            startSize = rayfieldWindow.Size
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizing = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - resizeStart
+            local newWidth = math.max(400, startSize.X.Offset + delta.X)
+            local newHeight = math.max(300, startSize.Y.Offset + delta.Y)
+            rayfieldWindow.Size = UDim2.new(0, newWidth, 0, newHeight)
+        end
+    end)
+end
+
+-- =============================================
+-- AUTO ANTI AFK (Default ON)
+-- =============================================
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0,0), Camera.CFrame)
+    wait(1)
+    VirtualUser:Button2Up(Vector2.new(0,0), Camera.CFrame)
+end)
+
+-- =============================================
+-- WATERMARK
+-- =============================================
+local watermark = Instance.new("ScreenGui")
+local wmFrame = Instance.new("Frame")
+local wmText = Instance.new("TextLabel")
+
+watermark.Name = "TheForge_Watermark"
+watermark.Parent = game:GetService("CoreGui")
+watermark.ResetOnSpawn = false
+
+wmFrame.Parent = watermark
+wmFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+wmFrame.BackgroundTransparency = 0.5
+wmFrame.BorderSizePixel = 0
+wmFrame.Position = UDim2.new(0, 10, 1, -40)
+wmFrame.Size = UDim2.new(0, 180, 0, 30)
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 5)
+corner.Parent = wmFrame
+
+wmText.Parent = wmFrame
+wmText.Size = UDim2.new(1, 0, 1, 0)
+wmText.BackgroundTransparency = 1
+wmText.Font = Enum.Font.GothamBold
+wmText.Text = "🔨 THE FORGE SCRIPT v1.0"
+wmText.TextColor3 = Color3.fromRGB(255, 100, 0)
+wmText.TextSize = 14
+
+-- =============================================
+-- NOTIFICATION & INIT
+-- =============================================
+Rayfield:Notify({
+    Title = "🔨 THE FORGE SCRIPT",
+    Content = "Version 1.0.0 loaded! Press F4 to toggle UI",
+    Duration = 5
+})
+
+print("✅ THE FORGE SCRIPT v1.0.0 loaded with 30+ features!")
+print("📱 Telegram: t.me/Swill_Way")
+print("🎯 Press F4 to toggle UI")
