@@ -1,7 +1,7 @@
 --[[
     FISH IT SCRIPT - AirHub V2 Style
     Made for Fish It / Fishing Simulator
-    Version: 1.0.0
+    Version: 1.0.0 (LENGKAP)
     Telegram: t.me/Swill_Way
 ]]
 
@@ -21,7 +21,7 @@ local Camera = Workspace.CurrentCamera
 
 -- Load UI Library (AirHub Style)
 local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Exunys/AirHub-V2/main/src/UI%20Library.lua"))()
-local MainFrame = UI:Load("RYEENZY EXPLOIT [BETA]")
+local MainFrame = UI:Load("RYEENZY EXPLOIT")
 
 -- Variables
 local Settings = {
@@ -96,7 +96,7 @@ local function startAutoFishing()
     spawn(function()
         while Settings.AutoFishing do
             wait(0.3)
-            
+
             -- Equip rod
             local rod = getRod()
             if not rod or rod.Parent ~= LocalPlayer.Character then
@@ -106,12 +106,12 @@ local function startAutoFishing()
                 end
                 wait(0.5)
             end
-            
+
             if Settings.AutoCast then
                 castLine()
                 wait(1.5)
             end
-            
+
             if Settings.AutoReel then
                 reelIn()
                 if Settings.InstantCatch then
@@ -388,17 +388,17 @@ PlayerESPSection:Toggle({
                     highlight.FillColor = Color3.fromRGB(255, 0, 0)
                     highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
                     highlight.FillTransparency = 0.5
-                    
+
                     -- Name
                     if player.Character:FindFirstChild("Head") then
                         local billboard = Instance.new("BillboardGui")
                         local text = Instance.new("TextLabel")
-                        
+
                         billboard.Parent = player.Character.Head
                         billboard.Size = UDim2.new(0, 100, 0, 30)
                         billboard.StudsOffset = Vector3.new(0, 2, 0)
                         billboard.AlwaysOnTop = true
-                        
+
                         text.Parent = billboard
                         text.Size = UDim2.new(1, 0, 1, 0)
                         text.BackgroundTransparency = 1
@@ -406,11 +406,16 @@ PlayerESPSection:Toggle({
                         text.TextColor3 = Color3.fromRGB(255, 255, 255)
                         text.TextStrokeTransparency = 0
                         text.TextSize = 14
+                        
+                        table.insert(ESP_Names, billboard)
                     end
                 end
             end
         else
-            -- Hapus semua ESP
+            for _, v in pairs(ESP_Names) do
+                pcall(function() v:Destroy() end)
+            end
+            ESP_Names = {}
         end
     end
 })
@@ -440,7 +445,7 @@ ServerSection:Button({
         local success, result = pcall(function()
             return game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100")
         end)
-        
+
         if success then
             local servers = HttpService:JSONDecode(result).data
             for _, server in pairs(servers) do
@@ -479,6 +484,7 @@ UtilitySection:Button({
     Name = "Copy Telegram",
     Callback = function()
         setclipboard("t.me/Swill_Way")
+        print("Telegram link copied!")
     end
 })
 
@@ -510,7 +516,7 @@ UISection:Button({
 })
 
 -- =============================================
--- AUTO ANTI AFK
+-- AUTO ANTI AFK (Default ON)
 -- =============================================
 LocalPlayer.Idled:Connect(function()
     VirtualUser:Button2Down(Vector2.new(0,0), Camera.CFrame)
@@ -519,8 +525,38 @@ LocalPlayer.Idled:Connect(function()
 end)
 
 -- =============================================
--- WATERMARK & NOTIFICATION
+-- WATERMARK
 -- =============================================
-print("✅ FISH IT SCRIPT loaded successfully!")
+local watermark = Instance.new("ScreenGui")
+local wmFrame = Instance.new("Frame")
+local wmText = Instance.new("TextLabel")
+
+watermark.Name = "FishIt_Watermark"
+watermark.Parent = game:GetService("CoreGui")
+watermark.ResetOnSpawn = false
+
+wmFrame.Parent = watermark
+wmFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+wmFrame.BackgroundTransparency = 0.5
+wmFrame.BorderSizePixel = 0
+wmFrame.Position = UDim2.new(0, 10, 1, -40)
+wmFrame.Size = UDim2.new(0, 180, 0, 30)
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 5)
+corner.Parent = wmFrame
+
+wmText.Parent = wmFrame
+wmText.Size = UDim2.new(1, 0, 1, 0)
+wmText.BackgroundTransparency = 1
+wmText.Font = Enum.Font.GothamBold
+wmText.Text = "🐟 FISH IT SCRIPT v1.0"
+wmText.TextColor3 = Color3.fromRGB(0, 200, 255)
+wmText.TextSize = 14
+
+-- =============================================
+-- NOTIFICATION
+-- =============================================
+print("✅ FISH IT SCRIPT v1.0.0 loaded successfully!")
 print("📱 Telegram: t.me/Swill_Way")
 print("🎯 Press F4 to toggle UI")
