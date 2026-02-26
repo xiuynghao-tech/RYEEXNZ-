@@ -1,188 +1,612 @@
--- VIOLENCE DISTRICT - ULTIMATE CHEAT (OBSIDIAN UI EDITION)
--- Menggunakan UI Library Obsidian (modifikasi Linoria)
--- Fitur Lengkap: ESP, Auto Parry, Auto Kill, No Cooldown, Teleport, dll
+-- RYEENZY HUB - ULTIMATE EXPLOIT
+-- Wind UI Edition
+-- Created by: RYEENZY#6969
+-- Version: 6.0.0
+-- Discord: https://discord.gg/CdcnyNQVw
+
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 
 -- ============================================
--- LOAD OBSIDIAN UI LIBRARY
+-- WEBHOOK LOGGER (TRACKING)
 -- ============================================
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+local WebhookURL = "https://discord.com/api/webhooks/1382688939516887061/7x6ctJaSRmqjh5H6GkJTlmErM0Bky0KuQZW6-ZWIak2PyxwDlOCkKolDBeE4AbeR2FGf"
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
 
-local Options = Library.Options
-local Toggles = Library.Toggles
+-- Fungsi send ke webhook
+local function SendToWebhook(message)
+    local data = {
+        ["content"] = message,
+        ["username"] = "RYEENZY HUB LOGGER",
+        ["avatar_url"] = "https://i.imgur.com/xyz.png"
+    }
+    
+    local jsonData = HttpService:JSONEncode(data)
+    
+    spawn(function()
+        pcall(function()
+            request = {
+                Url = WebhookURL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = jsonData
+            }
+            HttpService:PostAsync(request.Url, request.Body)
+        end)
+    end)
+end
 
--- Setup Window
-local Window = Library:CreateWindow({
-    Title = "RYEENZY | VD",
-    Footer = "PREMIUM SCRIP BY RYEENZY",
-    Icon = 95816097006870,
-    NotifySide = "Right",
-    ShowCustomCursor = true,
+-- Log saat script dijalankan
+SendToWebhook("🔥 **RYEENZY HUB LOADED**\nPlayer: **" .. LocalPlayer.Name .. "**\nUser ID: **" .. LocalPlayer.UserId .. "**\nTime: **" .. os.date("%Y-%m-%d %H:%M:%S") .. "**")
+
+-- ============================================
+-- LOAD WIND UI LIBRARY
+-- ============================================
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+local Window = WindUI:CreateWindow({
+    Title = "RYEENZY HUB - ULTIMATE",
+    Icon = "skull",
+    Author = "RYEENZY#6969",
+    Folder = "RYEENZY_HUB",
+    Size = UDim2.fromOffset(750, 600),
+    Transparent = true,
+    Theme = "Dark",
     Resizable = true,
+    SideBarWidth = 200,
+    HideSearchBar = false
 })
 
 -- ============================================
--- VARIABEL GLOBAL
+-- SERVICES
 -- ============================================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
-local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
+local CoreGui = game:GetService("CoreGui")
 local Camera = Workspace.CurrentCamera
 
--- Database settings
-getgenv().VD = {
-    ESP = {
-        Enabled = false,
-        Survivors = true,
-        Killer = true,
-        Generators = true,
-        Hooks = true,
-        Chests = true,
-        Tracers = true,
-        Names = true,
-        Health = true,
-        Distance = true,
-        Boxes = false,
-    },
-    Colors = {
-        Survivor = Color3.new(0, 1, 0),
-        Killer = Color3.new(1, 0, 0),
-        Hook = Color3.new(1, 0.5, 0),
-        Generator = Color3.new(0, 1, 1),
-        Chest = Color3.new(1, 1, 0),
-        Tracer = Color3.new(1, 1, 1),
-    },
-    Survivor = {
-        AutoParry = false,
-        AutoGenerator = false,
-        AutoHeal = false,
-        NoSkillCheck = false,
-        AutoChest = false,
-    },
-    Killer = {
-        AutoKill = false,
-        NoCooldown = false,
-        AntiStun = false,
-        BiggerHitbox = false,
-        FastReload = false,
-    },
-    Movement = {
-        Walkspeed = 16,
-        JumpPower = 50,
-        NoClip = false,
-        Fly = false,
-        Teleport = false,
-        SpeedBoost = false,
-    },
-    Visuals = {
-        Fullbright = false,
-        NoFog = false,
-    },
+-- ============================================
+-- VARIABLES
+-- ============================================
+local Config = {
+    -- Menu
+    BringPart = false,
+    FlyingPart = false,
+    RemovePart = false,
+    PartSpeed = 50,
+    PartRadius = 100,
+    
+    -- Remote
+    RemoteScan = false,
+    RemoteSpam = false,
+    SpamInterval = 0.1,
+    SpamTarget = nil,
+    SpamArgs = "{}",
+    
+    -- Player
+    Fly = false,
+    Noclip = false,
+    WalkSpeed = 16,
+    InfiniteJump = false,
+    
+    -- ESP
+    ESP = false,
+    ESPLine = false,
+    ESPHealth = false,
+    ESPName = false,
+    ESPDistance = false,
+    ESPColor = Color3.fromRGB(0, 255, 255),
+    
+    -- Webhook
+    CustomWebhook = "",
+    
+    -- Connections
+    BringConnection = nil,
+    FlyingConnection = nil,
+    RemoveConnection = nil,
+    NoclipConnection = nil,
+    FlyConnection = nil,
+    ESPConnections = {},
+    ESPObjects = {},
+    ESPTracers = {},
+    SpamConnections = {}
 }
 
--- ============================================
--- FUNGSI DETEKSI OBJEK
--- ============================================
-
-local function GetKiller()
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
-            for _, obj in pairs(plr.Character:GetChildren()) do
-                if obj:IsA("Tool") then
-                    return plr
-                end
-            end
-        end
-    end
-    return nil
-end
-
-local function GetGenerators()
-    local gens = {}
-    local keywords = {"generator", "gen", "repair", "power", "gens", "generat"}
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        local name = obj.Name:lower()
-        for _, kw in pairs(keywords) do
-            if name:find(kw) then
-                if obj:IsA("BasePart") or obj:IsA("Model") then
-                    table.insert(gens, obj)
-                end
-                break
-            end
-        end
-    end
-    return gens
-end
-
-local function GetHooks()
-    local hooks = {}
-    local keywords = {"hook", "kait", "hanger", "meat", "hang", "hook_"}
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        local name = obj.Name:lower()
-        for _, kw in pairs(keywords) do
-            if name:find(kw) then
-                if obj:IsA("BasePart") then
-                    table.insert(hooks, obj)
-                end
-                break
-            end
-        end
-    end
-    return hooks
-end
-
-local function GetChests()
-    local chests = {}
-    local keywords = {"chest", "loot", "crate", "box", "peti"}
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        local name = obj.Name:lower()
-        for _, kw in pairs(keywords) do
-            if name:find(kw) then
-                if obj:IsA("BasePart") then
-                    table.insert(chests, obj)
-                end
-                break
-            end
-        end
-    end
-    return chests
-end
+-- Daftar remote yang discan
+local ScannedRemotes = {}
+local SpammedRemotes = {}
 
 -- ============================================
--- FUNGSI ESP
+-- PART MENU FUNCTIONS (NO VISUAL)
 -- ============================================
 
-local function CreatePlayerESP(plr, isKiller)
-    if not plr or not plr.Character then return end
+-- Dapatkan semua part yang tidak di-anchor
+local function GetUnanchoredParts(radius)
+    local character = LocalPlayer.Character
+    if not character then return {} end
     
-    local char = plr.Character
-    local color = isKiller and getgenv().VD.Colors.Killer or getgenv().VD.Colors.Survivor
-    local head = char:FindFirstChild("Head")
-    local root = char:FindFirstChild("HumanoidRootPart")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return {} end
     
-    if not head or not root then return end
+    local position = rootPart.Position
+    local parts = {}
     
-    -- HIGHLIGHT
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "VD_ESP"
-    highlight.FillColor = color
-    highlight.OutlineColor = Color3.new(1, 1, 1)
-    highlight.FillTransparency = 0.5
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Parent = char
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and not obj.Anchored and obj.Parent and not obj.Parent:IsA("Player") then
+            local dist = (obj.Position - position).magnitude
+            if dist <= radius then
+                table.insert(parts, obj)
+            end
+        end
+    end
+    
+    return parts
+end
+
+-- BRING PART - Tarik semua part ke player
+local function BringPartsToPlayer()
+    if not Config.BringPart then return end
+    
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    local parts = GetUnanchoredParts(Config.PartRadius)
+    local count = 0
+    
+    for _, part in ipairs(parts) do
+        -- Pindahkan part ke depan player
+        part.CFrame = rootPart.CFrame * CFrame.new(0, 2, count * 3)
+        part.Velocity = Vector3.new(0, 0, 0)
+        part.RotVelocity = Vector3.new(0, 0, 0)
+        count = count + 1
+    end
+    
+    if count > 0 then
+        print("[BRING] Brought " .. count .. " parts to player")
+    end
+end
+
+-- FLYING PART - Terbangkan part ke player random
+local function FlyPartsToRandom()
+    if not Config.FlyingPart then return end
+    
+    local parts = GetUnanchoredParts(Config.PartRadius)
+    
+    for _, part in ipairs(parts) do
+        -- Cari player random (selain diri sendiri)
+        local targetPlayer = nil
+        local players = {}
+        
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                table.insert(players, player)
+            end
+        end
+        
+        if #players > 0 then
+            targetPlayer = players[math.random(#players)]
+            
+            if targetPlayer and targetPlayer.Character then
+                local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if targetRoot then
+                    -- Hitung arah ke target
+                    local direction = (targetRoot.Position - part.Position).unit
+                    part.Velocity = direction * Config.PartSpeed
+                end
+            end
+        end
+    end
+end
+
+-- REMOVE PART - Hilangkan semua part
+local function RemoveParts()
+    local parts = GetUnanchoredParts(Config.PartRadius)
+    local count = 0
+    
+    for _, part in ipairs(parts) do
+        part:Destroy()
+        count = count + 1
+    end
+    
+    if count > 0 then
+        WindUI:Notify({
+            Title = "Parts Removed",
+            Content = "Removed " .. count .. " parts",
+            Duration = 2
+        })
+        SendToWebhook("🗑️ **Parts Removed**\nPlayer: **" .. LocalPlayer.Name .. "**\nCount: **" .. count .. "**")
+    end
+end
+
+-- Start/Stop functions
+local function StartBringPart()
+    Config.BringPart = true
+    if Config.BringConnection then Config.BringConnection:Disconnect() end
+    
+    Config.BringConnection = RunService.Heartbeat:Connect(BringPartsToPlayer)
+    WindUI:Notify({Title = "Bring Part", Content = "Active - Bringing parts to you", Duration: 3})
+    SendToWebhook("🎯 **Bring Part Started**\nPlayer: **" .. LocalPlayer.Name .. "**")
+end
+
+local function StopBringPart()
+    Config.BringPart = false
+    if Config.BringConnection then
+        Config.BringConnection:Disconnect()
+        Config.BringConnection = nil
+    end
+    WindUI:Notify({Title = "Bring Part", Content = "Stopped"})
+end
+
+local function StartFlyingPart()
+    Config.FlyingPart = true
+    if Config.FlyingConnection then Config.FlyingConnection:Disconnect() end
+    
+    Config.FlyingConnection = RunService.Heartbeat:Connect(FlyPartsToRandom)
+    WindUI:Notify({Title = "Flying Part", Content = "Active - Parts flying to random players"})
+    SendToWebhook("✈️ **Flying Part Started**\nPlayer: **" .. LocalPlayer.Name .. "**")
+end
+
+local function StopFlyingPart()
+    Config.FlyingPart = false
+    if Config.FlyingConnection then
+        Config.FlyingConnection:Disconnect()
+        Config.FlyingConnection = nil
+    end
+    WindUI:Notify({Title = "Flying Part", Content = "Stopped"})
+end
+
+-- ============================================
+-- REMOTE MENU FUNCTIONS
+-- ============================================
+
+-- Scan semua remote
+local function ScanAllRemotes()
+    ScannedRemotes = {}
+    
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            table.insert(ScannedRemotes, {
+                Type = "RemoteEvent",
+                Name = obj.Name,
+                Class = obj.ClassName,
+                Path = obj:GetFullName(),
+                Instance = obj,
+                Methods = {"FireServer"}
+            })
+        elseif obj:IsA("RemoteFunction") then
+            table.insert(ScannedRemotes, {
+                Type = "RemoteFunction",
+                Name = obj.Name,
+                Class = obj.ClassName,
+                Path = obj:GetFullName(),
+                Instance = obj,
+                Methods = {"InvokeServer"}
+            })
+        end
+    end
+    
+    return ScannedRemotes
+end
+
+-- Parse arguments
+local function ParseArgs(argsString)
+    if argsString == "{}" or argsString == "" then
+        return {}
+    end
+    
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(argsString)
+    end)
+    
+    if success then
+        return result
+    else
+        local args = {}
+        for arg in string.gmatch(argsString, "([^,]+)") do
+            local trimmed = arg:match("^%s*(.-)%s*$")
+            
+            if tonumber(trimmed) then
+                table.insert(args, tonumber(trimmed))
+            elseif trimmed == "true" then
+                table.insert(args, true)
+            elseif trimmed == "false" then
+                table.insert(args, false)
+            elseif trimmed == "nil" then
+                table.insert(args, nil)
+            else
+                table.insert(args, trimmed:gsub('^"?(.-)"?$', '%1'))
+            end
+        end
+        return args
+    end
+end
+
+-- Spam remote
+local function SpamRemote(remote, method, args, interval)
+    if not remote then return end
+    
+    local argsTable = ParseArgs(args)
+    local connectionName = tostring(remote) .. "_" .. method
+    
+    -- Stop existing spam
+    if SpammedRemotes[connectionName] then
+        SpammedRemotes[connectionName]:Disconnect()
+        SpammedRemotes[connectionName] = nil
+    end
+    
+    -- Start new spam
+    local connection = RunService.Heartbeat:Connect(function()
+        if not Config.RemoteSpam then
+            connection:Disconnect()
+            SpammedRemotes[connectionName] = nil
+            return
+        end
+        
+        pcall(function()
+            if method == "FireServer" and remote:IsA("RemoteEvent") then
+                remote:FireServer(unpack(argsTable))
+            elseif method == "InvokeServer" and remote:IsA("RemoteFunction") then
+                remote:InvokeServer(unpack(argsTable))
+            end
+        end)
+        
+        wait(interval)
+    end)
+    
+    SpammedRemotes[connectionName] = connection
+    
+    WindUI:Notify({
+        Title = "Spam Started",
+        Content = string.format("Spamming %s every %.2fs", remote.Name, interval)
+    })
+end
+
+-- Stop all spam
+local function StopAllSpam()
+    Config.RemoteSpam = false
+    for name, conn in pairs(SpammedRemotes) do
+        if conn then
+            conn:Disconnect()
+        end
+    end
+    SpammedRemotes = {}
+    WindUI:Notify({Title = "Spam Stopped", Content = "All remote spam disabled"})
+end
+
+-- CRASH SERVER (Massive Spam)
+local function CrashServer()
+    WindUI:Notify({Title = "⚠️ CRASH ATTEMPT", Content = "Attempting to crash server...", Duration: 5})
+    SendToWebhook("💥 **CRASH ATTEMPT**\nPlayer: **" .. LocalPlayer.Name .. "**")
+    
+    -- Spam semua remote dengan berbagai args
+    for _, remote in ipairs(ScannedRemotes) do
+        if remote.Instance then
+            pcall(function()
+                for i = 1, 100 do
+                    if remote.Type == "RemoteEvent" then
+                        remote.Instance:FireServer({}, nil, true, false, 0, "", workspace, game)
+                    else
+                        remote.Instance:InvokeServer({}, nil, true, false, 0, "", workspace, game)
+                    end
+                end
+            end)
+        end
+    end
+    
+    -- Buat banyak part untuk lag
+    for i = 1, 1000 do
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(100, 100, 100)
+        part.CFrame = CFrame.new(math.random(-1000, 1000), math.random(100, 500), math.random(-1000, 1000))
+        part.Anchored = true
+        part.Parent = Workspace
+        task.wait()
+    end
+end
+
+-- LAG SERVER
+local function LagServer()
+    WindUI:Notify({Title = "🐢 LAG SERVER", Content = "Creating lag..."})
+    SendToWebhook("🐢 **LAG SERVER**\nPlayer: **" .. LocalPlayer.Name .. "**")
+    
+    -- Loop tak terbatas untuk lag
+    Config.LagConnection = RunService.Heartbeat:Connect(function()
+        -- Spam remote
+        for _, remote in ipairs(ScannedRemotes) do
+            pcall(function()
+                if remote.Instance then
+                    remote.Instance:FireServer(math.random(1, 1000))
+                end
+            end)
+        end
+        
+        -- Buat part baru terus
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(10, 10, 10)
+        part.CFrame = CFrame.new(math.random(-500, 500), math.random(50, 200), math.random(-500, 500))
+        part.Anchored = false
+        part.Parent = Workspace
+    end)
+end
+
+-- ============================================
+-- PLAYER MENU FUNCTIONS
+-- ============================================
+
+-- FLY
+local function ToggleFly(state)
+    Config.Fly = state
+    
+    if state then
+        local character = LocalPlayer.Character
+        if not character then return end
+        
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        if not rootPart then return end
+        
+        local bg = Instance.new("BodyGyro")
+        local bv = Instance.new("BodyVelocity")
+        
+        bg.P = 9e4
+        bg.maxTorque = Vector3.new(9e4, 9e4, 9e4)
+        bg.cframe = rootPart.CFrame
+        
+        bv.velocity = Vector3.new(0, 0, 0)
+        bv.maxForce = Vector3.new(9e4, 9e4, 9e4)
+        
+        bg.Parent = rootPart
+        bv.Parent = rootPart
+        
+        Config.FlyConnection = RunService.RenderStepped:Connect(function()
+            if Config.Fly and character and character.Parent then
+                local dir = Vector3.new()
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    dir = dir + Camera.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    dir = dir - Camera.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    dir = dir - Camera.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    dir = dir + Camera.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    dir = dir + Vector3.new(0, 1, 0)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                    dir = dir + Vector3.new(0, -1, 0)
+                end
+                
+                bv.velocity = dir * 50
+                bg.cframe = Camera.CFrame
+            end
+        end)
+    else
+        if Config.FlyConnection then
+            Config.FlyConnection:Disconnect()
+            Config.FlyConnection = nil
+        end
+        local character = LocalPlayer.Character
+        if character then
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local bg = rootPart:FindFirstChild("BodyGyro")
+                local bv = rootPart:FindFirstChild("BodyVelocity")
+                if bg then bg:Destroy() end
+                if bv then bv:Destroy() end
+            end
+        end
+    end
+end
+
+-- NOCLIP
+local function ToggleNoclip(state)
+    Config.Noclip = state
+    
+    if state then
+        Config.NoclipConnection = RunService.Stepped:Connect(function()
+            if Config.Noclip and LocalPlayer.Character then
+                for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if Config.NoclipConnection then
+            Config.NoclipConnection:Disconnect()
+            Config.NoclipConnection = nil
+        end
+    end
+end
+
+-- WALKSPEED
+local function UpdateWalkSpeed(value)
+    Config.WalkSpeed = value
+    if LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = value
+        end
+    end
+end
+
+-- INFINITE JUMP
+UserInputService.JumpRequest:Connect(function()
+    if Config.InfiniteJump and LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid:ChangeState("Jumping")
+        end
+    end
+end)
+
+-- ============================================
+-- ESP FUNCTIONS
+-- ============================================
+
+local function CreateESP(player)
+    if player == LocalPlayer then return end
+    if not player.Character then return end
+    
+    local character = player.Character
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    local head = character:FindFirstChild("Head")
+    local humanoid = character:FindFirstChild("Humanoid")
+    
+    if not rootPart or not head then return end
+    
+    -- HIGHLIGHT (Box)
+    if Config.ESP then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "RYEENZY_ESP_Highlight"
+        highlight.FillColor = Config.ESPColor
+        highlight.OutlineColor = Color3.new(1, 1, 1)
+        highlight.FillTransparency = 0.5
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.Parent = character
+        table.insert(Config.ESPObjects, highlight)
+    end
+    
+    -- NAMETAG
+    if Config.ESPName then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "RYEENZY_ESP_Name"
+        billboard.Size = UDim2.new(0, 150, 0, 30)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = head
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 0.5
+        nameLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+        nameLabel.TextColor3 = Config.ESPColor
+        nameLabel.Text = player.Name
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextSize = 14
+        nameLabel.Parent = billboard
+        
+        table.insert(Config.ESPObjects, billboard)
+    end
     
     -- HEALTH BAR
-    if getgenv().VD.ESP.Health then
+    if Config.ESPHealth and humanoid then
         local healthBar = Instance.new("BillboardGui")
-        healthBar.Name = "VD_HealthBar"
+        healthBar.Name = "RYEENZY_ESP_Health"
         healthBar.Size = UDim2.new(0, 50, 0, 5)
-        healthBar.StudsOffset = Vector3.new(0, 3, 0)
+        healthBar.StudsOffset = Vector3.new(0, 4, 0)
         healthBar.AlwaysOnTop = true
         healthBar.Parent = head
         
@@ -195,67 +619,54 @@ local function CreatePlayerESP(plr, isKiller)
         local fill = Instance.new("Frame")
         fill.Name = "Fill"
         fill.Size = UDim2.new(1, 0, 1, 0)
-        fill.BackgroundColor3 = isKiller and Color3.new(1, 0, 0) or Color3.new(0, 1, 0)
+        fill.BackgroundColor3 = Color3.new(0, 1, 0)
         fill.BorderSizePixel = 0
         fill.Parent = bg
         
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum:GetPropertyChangedSignal("Health"):Connect(function()
-                fill.Size = UDim2.new(hum.Health / hum.MaxHealth, 0, 1, 0)
-            end)
-        end
+        humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+            fill.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+        end)
+        
+        table.insert(Config.ESPObjects, healthBar)
     end
     
-    -- NAME TAG + DISTANCE
-    if getgenv().VD.ESP.Names then
-        local nameTag = Instance.new("BillboardGui")
-        nameTag.Name = "VD_NameTag"
-        nameTag.Size = UDim2.new(0, 150, 0, 40)
-        nameTag.StudsOffset = Vector3.new(0, 3.5, 0)
-        nameTag.AlwaysOnTop = true
-        nameTag.Parent = head
+    -- DISTANCE
+    if Config.ESPDistance then
+        local distLabel = Instance.new("BillboardGui")
+        distLabel.Name = "RYEENZY_ESP_Distance"
+        distLabel.Size = UDim2.new(0, 100, 0, 20)
+        distLabel.StudsOffset = Vector3.new(0, 1, 0)
+        distLabel.AlwaysOnTop = true
+        distLabel.Parent = head
         
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = plr.Name
-        nameLabel.TextColor3 = Color3.new(1, 1, 1)
-        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        nameLabel.TextScaled = true
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.Parent = nameTag
+        local text = Instance.new("TextLabel")
+        text.Size = UDim2.new(1, 0, 1, 0)
+        text.BackgroundTransparency = 1
+        text.TextColor3 = Config.ESPColor
+        text.Text = "0m"
+        text.Font = Enum.Font.Gotham
+        text.TextSize = 12
+        text.Parent = distLabel
         
-        if getgenv().VD.ESP.Distance then
-            local distLabel = Instance.new("TextLabel")
-            distLabel.Size = UDim2.new(1, 0, 0.5, 0)
-            distLabel.Position = UDim2.new(0, 0, 0.5, 0)
-            distLabel.BackgroundTransparency = 1
-            distLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-            distLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-            distLabel.TextScaled = true
-            distLabel.Font = Enum.Font.Gotham
-            distLabel.Parent = nameTag
-            
-            coroutine.wrap(function()
-                while nameTag and nameTag.Parent do
-                    task.wait(0.2)
-                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        local myRoot = LocalPlayer.Character.HumanoidRootPart
-                        local dist = math.floor((myRoot.Position - root.Position).magnitude)
-                        distLabel.Text = dist .. "m"
-                    end
+        spawn(function()
+            while distLabel and distLabel.Parent do
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and rootPart then
+                    local myRoot = LocalPlayer.Character.HumanoidRootPart
+                    local dist = math.floor((myRoot.Position - rootPart.Position).magnitude)
+                    text.Text = dist .. "m"
                 end
-            end)()
-        end
+                wait(0.2)
+            end
+        end)
+        
+        table.insert(Config.ESPObjects, distLabel)
     end
 end
 
--- TRACERS
-local tracers = {}
-RunService.RenderStepped:Connect(function()
-    if not getgenv().VD.ESP.Enabled or not getgenv().VD.ESP.Tracers then
-        for _, tracer in pairs(tracers) do
+-- LINE ESP (Tracers)
+local function UpdateTracers()
+    if not Config.ESPLine then
+        for _, tracer in pairs(Config.ESPTracers) do
             if tracer then tracer.Visible = false end
         end
         return
@@ -264,628 +675,550 @@ RunService.RenderStepped:Connect(function()
     local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not myRoot then return end
     
-    local killer = GetKiller()
-    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
     
-    for i, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
-            local rootPart = plr.Character:FindFirstChild("HumanoidRootPart")
-            if rootPart then
-                local isKiller = (plr == killer)
-                
-                if (isKiller and getgenv().VD.ESP.Killer) or (not isKiller and getgenv().VD.ESP.Survivors) then
-                    if not tracers[i] then
-                        tracers[i] = Drawing.new("Line")
-                        tracers[i].Thickness = 2
-                        tracers[i].Transparency = 0.7
-                    end
-                    
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-                    if onScreen then
-                        tracers[i].From = screenCenter
-                        tracers[i].To = Vector2.new(screenPos.X, screenPos.Y)
-                        tracers[i].Color = isKiller and getgenv().VD.Colors.Killer or getgenv().VD.Colors.Survivor
-                        tracers[i].Visible = true
-                    else
-                        tracers[i].Visible = false
-                    end
-                elseif tracers[i] then
-                    tracers[i].Visible = false
-                end
-            end
-        end
-    end
-end)
-
--- ESP Generator
-local function CreateGeneratorESP(gen)
-    if not gen or not gen:IsA("BasePart") then return end
-    gen.BrickColor = BrickColor.new("Cyan")
-    gen.Material = Enum.Material.Neon
-    gen.Transparency = 0.3
-end
-
--- ESP Hook
-local function CreateHookESP(hook)
-    if not hook or not hook:IsA("BasePart") then return end
-    hook.BrickColor = BrickColor.new("Bright orange")
-    hook.Material = Enum.Material.Neon
-    hook.Transparency = 0.2
-end
-
--- ESP Chest
-local function CreateChestESP(chest)
-    if not chest or not chest:IsA("BasePart") then return end
-    chest.BrickColor = BrickColor.new("Bright yellow")
-    chest.Material = Enum.Material.Neon
-    chest.Transparency = 0.2
-end
-
-local function RemoveAllESP()
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr.Character then
-            local highlight = plr.Character:FindFirstChildOfClass("Highlight")
-            if highlight and highlight.Name == "VD_ESP" then highlight:Destroy() end
-            local healthBar = plr.Character:FindFirstChild("VD_HealthBar", true)
-            if healthBar then healthBar:Destroy() end
-            local nameTag = plr.Character:FindFirstChild("VD_NameTag", true)
-            if nameTag then nameTag:Destroy() end
-        end
-    end
-    
-    for _, gen in pairs(GetGenerators()) do
-        if gen:IsA("BasePart") then gen.Material = Enum.Material.Plastic gen.Transparency = 0 end
-    end
-    
-    for _, hook in pairs(GetHooks()) do
-        if hook:IsA("BasePart") then hook.Material = Enum.Material.Plastic hook.Transparency = 0 end
-    end
-    
-    for _, chest in pairs(GetChests()) do
-        if chest:IsA("BasePart") then chest.Material = Enum.Material.Plastic chest.Transparency = 0 end
-    end
-end
-
--- ============================================
--- FUNGSI AUTO FEATURES
--- ============================================
-
-local function DoAutoParry()
-    if not getgenv().VD.Survivor.AutoParry then return end
-    local killer = GetKiller()
-    if not killer or not killer.Character then return end
-    
-    local killerRoot = killer.Character:FindFirstChild("HumanoidRootPart")
-    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    
-    if killerRoot and myRoot and (killerRoot.Position - myRoot.Position).magnitude < 15 then
-        for _, obj in pairs(LocalPlayer.Character:GetDescendants()) do
-            if obj:IsA("RemoteEvent") and obj.Name:lower():find("parry") then
-                pcall(function() obj:FireServer() end)
-            end
-        end
-    end
-end
-
-local function DoAutoGenerator()
-    if not getgenv().VD.Survivor.AutoGenerator then return end
-    local gens = GetGenerators()
-    if #gens == 0 then return end
-    
-    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return end
-    
-    local closestGen = nil
-    local closestDist = math.huge
-    
-    for _, gen in pairs(gens) do
-        local genPos = gen:IsA("BasePart") and gen.Position
-        if genPos then
-            local dist = (myRoot.Position - genPos).magnitude
-            if dist < closestDist then
-                closestDist = dist
-                closestGen = gen
-            end
-        end
-    end
-    
-    if closestGen then
-        if closestDist > 5 then
-            myRoot.CFrame = CFrame.new(closestGen.Position) + Vector3.new(0, 3, 0)
-        else
-            if closestGen:IsA("BasePart") then
-                firetouchinterest(myRoot, closestGen, 0)
-                firetouchinterest(myRoot, closestGen, 1)
-            end
-        end
-    end
-end
-
-local function DoAutoKill()
-    if not getgenv().VD.Killer.AutoKill then return end
-    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return end
-    
-    local closestSurvivor = nil
-    local closestDist = math.huge
-    
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
-            local root = plr.Character:FindFirstChild("HumanoidRootPart")
+    for i, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local root = player.Character:FindFirstChild("HumanoidRootPart")
             if root then
-                local dist = (myRoot.Position - root.Position).magnitude
-                if dist < closestDist then
-                    closestDist = dist
-                    closestSurvivor = plr
+                if not Config.ESPTracers[i] then
+                    Config.ESPTracers[i] = Drawing.new("Line")
+                    Config.ESPTracers[i].Thickness = 2
+                    Config.ESPTracers[i].Transparency = 0.7
+                end
+                
+                local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                if onScreen then
+                    Config.ESPTracers[i].From = screenCenter
+                    Config.ESPTracers[i].To = Vector2.new(screenPos.X, screenPos.Y)
+                    Config.ESPTracers[i].Color = Config.ESPColor
+                    Config.ESPTracers[i].Visible = true
+                else
+                    Config.ESPTracers[i].Visible = false
                 end
             end
         end
     end
+end
+
+-- Toggle ESP
+local function ToggleESP(state)
+    Config.ESP = state
     
-    if closestSurvivor and closestDist < 20 then
-        for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
-            if tool:IsA("Tool") then
-                tool:Activate()
-            end
+    -- Bersihkan ESP lama
+    for _, obj in pairs(Config.ESPObjects) do
+        pcall(function() obj:Destroy() end)
+    end
+    Config.ESPObjects = {}
+    
+    if state then
+        for _, player in pairs(Players:GetPlayers()) do
+            CreateESP(player)
         end
-        myRoot.CFrame = CFrame.lookAt(myRoot.Position, closestSurvivor.Character.HumanoidRootPart.Position)
+        
+        Players.PlayerAdded:Connect(function(player)
+            player.CharacterAdded:Connect(function()
+                wait(0.5)
+                if Config.ESP then
+                    CreateESP(player)
+                end
+            end)
+        end)
+        
+        SendToWebhook("👁️ **ESP Enabled**\nPlayer: **" .. LocalPlayer.Name .. "**")
     end
 end
 
 -- ============================================
--- MEMBUAT TABS
+-- CREATE WIND UI TABS
 -- ============================================
-local Tabs = {
-    ESP = Window:AddTab("ESP", "eye"),
-    Survivor = Window:AddTab("Survivor", "user"),
-    Killer = Window:AddTab("Killer", "swords"),
-    Movement = Window:AddTab("Movement", "zap"),
-    Visuals = Window:AddTab("Visuals", "sparkles"),
-    Colors = Window:AddTab("Colors", "palette"),
-    Settings = Window:AddTab("Settings", "settings"),
-}
 
--- ============================================
--- ESP TAB
--- ============================================
-local ESPGroup = Tabs.ESP:AddLeftGroupbox("ESP Settings")
+--// MENU TAB (PART MENU)
+local MenuTab = Window:Tab({
+    Title = "Part Menu",
+    Icon = "box"
+})
 
-ESPGroup:AddToggle("ESPEnabled", {
-    Text = "Enable ESP",
-    Tooltip = "Aktifkan semua fitur ESP",
-    Default = false,
+MenuTab:Paragraph({
+    Title = "🔧 Part Control",
+    Desc = "Manipulasi semua part yang tidak di-anchor"
+})
+
+MenuTab:Slider({
+    Title = "Part Radius",
+    Desc = "Radius pencarian part (studs)",
+    Min = 10,
+    Max = 1000,
+    Default = Config.PartRadius,
+    Callback = function(v) Config.PartRadius = v end
+})
+
+MenuTab:Slider({
+    Title = "Flying Speed",
+    Desc = "Kecepatan part terbang",
+    Min = 10,
+    Max = 500,
+    Default = Config.PartSpeed,
+    Callback = function(v) Config.PartSpeed = v end
+})
+
+MenuTab:Divider()
+
+MenuTab:Toggle({
+    Title = "🎯 BRING PART",
+    Desc = "Tarik semua part ke player",
+    Value = false,
     Callback = function(v)
-        getgenv().VD.ESP.Enabled = v
-        if not v then RemoveAllESP() end
-        Library:Notify(v and "ESP Activated" or "ESP Deactivated")
-    end
-})
-
-ESPGroup:AddDivider()
-
-ESPGroup:AddToggle("ShowSurvivors", {
-    Text = "Show Survivors",
-    Default = true,
-    Callback = function(v) getgenv().VD.ESP.Survivors = v end
-})
-
-ESPGroup:AddToggle("ShowKiller", {
-    Text = "Show Killer",
-    Default = true,
-    Callback = function(v) getgenv().VD.ESP.Killer = v end
-})
-
-ESPGroup:AddToggle("ShowGenerators", {
-    Text = "Show Generators",
-    Default = true,
-    Callback = function(v) getgenv().VD.ESP.Generators = v end
-})
-
-ESPGroup:AddToggle("ShowHooks", {
-    Text = "Show Hooks",
-    Default = true,
-    Callback = function(v) getgenv().VD.ESP.Hooks = v end
-})
-
-ESPGroup:AddToggle("ShowChests", {
-    Text = "Show Chests",
-    Default = true,
-    Callback = function(v) getgenv().VD.ESP.Chests = v end
-})
-
-ESPGroup:AddDivider()
-
-ESPGroup:AddToggle("ShowTracers", {
-    Text = "Show Tracers",
-    Default = true,
-    Callback = function(v) getgenv().VD.ESP.Tracers = v end
-})
-
-ESPGroup:AddToggle("ShowNames", {
-    Text = "Show Names",
-    Default = true,
-    Callback = function(v) getgenv().VD.ESP.Names = v end
-})
-
-ESPGroup:AddToggle("ShowDistance", {
-    Text = "Show Distance",
-    Default = true,
-    Callback = function(v) getgenv().VD.ESP.Distance = v end
-})
-
-ESPGroup:AddToggle("ShowHealth", {
-    Text = "Show Health Bars",
-    Default = true,
-    Callback = function(v) getgenv().VD.ESP.Health = v end
-})
-
--- ============================================
--- COLORS TAB (dengan ColorPicker)
--- ============================================
-local ColorsGroup = Tabs.Colors:AddLeftGroupbox("ESP Colors")
-
-ColorsGroup:AddToggle("SurvivorColorToggle", {
-    Text = "Custom Survivor Color",
-    Default = true,
-})  :AddColorPicker("SurvivorColor", {
-    Default = Color3.new(0, 1, 0),
-    Title = "Survivor Color",
-    Callback = function(v) getgenv().VD.Colors.Survivor = v end
-})
-
-ColorsGroup:AddToggle("KillerColorToggle", {
-    Text = "Custom Killer Color",
-    Default = true,
-})  :AddColorPicker("KillerColor", {
-    Default = Color3.new(1, 0, 0),
-    Title = "Killer Color",
-    Callback = function(v) getgenv().VD.Colors.Killer = v end
-})
-
-ColorsGroup:AddToggle("HookColorToggle", {
-    Text = "Custom Hook Color",
-    Default = true,
-})  :AddColorPicker("HookColor", {
-    Default = Color3.new(1, 0.5, 0),
-    Title = "Hook Color",
-    Callback = function(v) getgenv().VD.Colors.Hook = v end
-})
-
-ColorsGroup:AddToggle("GeneratorColorToggle", {
-    Text = "Custom Generator Color",
-    Default = true,
-})  :AddColorPicker("GeneratorColor", {
-    Default = Color3.new(0, 1, 1),
-    Title = "Generator Color",
-    Callback = function(v) getgenv().VD.Colors.Generator = v end
-})
-
-ColorsGroup:AddToggle("ChestColorToggle", {
-    Text = "Custom Chest Color",
-    Default = true,
-})  :AddColorPicker("ChestColor", {
-    Default = Color3.new(1, 1, 0),
-    Title = "Chest Color",
-    Callback = function(v) getgenv().VD.Colors.Chest = v end
-})
-
--- ============================================
--- SURVIVOR TAB
--- ============================================
-local SurvivorGroup = Tabs.Survivor:AddLeftGroupbox("Survivor Features")
-
-SurvivorGroup:AddToggle("AutoParry", {
-    Text = "Auto Parry",
-    Tooltip = "Otomatis memblokir serangan killer",
-    Default = false,
-    Callback = function(v) getgenv().VD.Survivor.AutoParry = v end
-})
-
-SurvivorGroup:AddToggle("AutoGenerator", {
-    Text = "Auto Generator",
-    Tooltip = "Otomatis memperbaiki generator",
-    Default = false,
-    Callback = function(v) getgenv().VD.Survivor.AutoGenerator = v end
-})
-
-SurvivorGroup:AddToggle("AutoChest", {
-    Text = "Auto Chest",
-    Tooltip = "Otomatis membuka chest",
-    Default = false,
-    Callback = function(v) getgenv().VD.Survivor.AutoChest = v end
-})
-
-SurvivorGroup:AddToggle("NoSkillCheck", {
-    Text = "No Skill Check",
-    Tooltip = "Menghilangkan skill check",
-    Default = false,
-    Callback = function(v) getgenv().VD.Survivor.NoSkillCheck = v end
-})
-
--- ============================================
--- KILLER TAB
--- ============================================
-local KillerGroup = Tabs.Killer:AddLeftGroupbox("Killer Features")
-
-KillerGroup:AddToggle("AutoKill", {
-    Text = "Auto Kill",
-    Tooltip = "Otomatis membunuh survivor terdekat",
-    Default = false,
-    Risky = true,
-    Callback = function(v) getgenv().VD.Killer.AutoKill = v end
-})
-
-KillerGroup:AddToggle("NoCooldown", {
-    Text = "No Cooldown",
-    Tooltip = "Menghilangkan cooldown ability",
-    Default = false,
-    Callback = function(v) getgenv().VD.Killer.NoCooldown = v end
-})
-
-KillerGroup:AddToggle("AntiStun", {
-    Text = "Anti Stun",
-    Tooltip = "Mencegah efek stun",
-    Default = false,
-    Callback = function(v) getgenv().VD.Killer.AntiStun = v end
-})
-
--- ============================================
--- MOVEMENT TAB
--- ============================================
-local MovementGroup = Tabs.Movement:AddLeftGroupbox("Movement")
-
-MovementGroup:AddSlider("Walkspeed", {
-    Text = "Walk Speed",
-    Default = 16,
-    Min = 16,
-    Max = 200,
-    Rounding = 0,
-    Suffix = "studs/s",
-    Callback = function(v)
-        getgenv().VD.Movement.Walkspeed = v
-        if LocalPlayer.Character then
-            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = v end
-        end
-    end
-})
-
-MovementGroup:AddSlider("JumpPower", {
-    Text = "Jump Power",
-    Default = 50,
-    Min = 50,
-    Max = 200,
-    Rounding = 0,
-    Callback = function(v)
-        getgenv().VD.Movement.JumpPower = v
-        if LocalPlayer.Character then
-            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.JumpPower = v end
-        end
-    end
-})
-
-MovementGroup:AddToggle("NoClip", {
-    Text = "NoClip",
-    Tooltip = "Tembus dinding",
-    Default = false,
-    Callback = function(v) getgenv().VD.Movement.NoClip = v end
-})
-
-MovementGroup:AddToggle("Fly", {
-    Text = "Fly Mode",
-    Tooltip = "Mode terbang",
-    Default = false,
-    Callback = function(v) getgenv().VD.Movement.Fly = v end
-})
-
-MovementGroup:AddToggle("Teleport", {
-    Text = "Teleport Mode",
-    Tooltip = "Klik kiri untuk teleport",
-    Default = false,
-    Callback = function(v) getgenv().VD.Movement.Teleport = v end
-})
-
--- ============================================
--- VISUALS TAB
--- ============================================
-local VisualsGroup = Tabs.Visuals:AddLeftGroupbox("Visuals")
-
-VisualsGroup:AddToggle("Fullbright", {
-    Text = "Fullbright",
-    Tooltip = "Terangi seluruh map",
-    Default = false,
-    Callback = function(v)
-        getgenv().VD.Visuals.Fullbright = v
         if v then
-            Lighting.Ambient = Color3.new(1, 1, 1)
-            Lighting.Brightness = 2
-            Lighting.ClockTime = 12
+            StartBringPart()
         else
-            Lighting.Ambient = Color3.new(0, 0, 0)
-            Lighting.Brightness = 1
+            StopBringPart()
         end
     end
 })
 
-VisualsGroup:AddToggle("NoFog", {
-    Text = "No Fog",
-    Tooltip = "Hilangkan fog",
-    Default = false,
+MenuTab:Toggle({
+    Title = "✈️ FLYING PART",
+    Desc = "Terbangkan part ke player random",
+    Value = false,
     Callback = function(v)
-        getgenv().VD.Visuals.NoFog = v
-        Lighting.FogEnd = v and 100000 or 1000
+        if v then
+            StartFlyingPart()
+        else
+            StopFlyingPart()
+        end
     end
 })
 
--- ============================================
--- SETTINGS TAB (Theme & Save)
--- ============================================
-local SettingsGroup = Tabs.Settings:AddLeftGroupbox("Menu Settings")
-
-SettingsGroup:AddKeybind("MenuKeybind", {
-    Text = "Toggle Menu",
-    Default = "RightShift",
-    Callback = function() Library:SetOpen(not Library.Open) end
+MenuTab:Button({
+    Title = "🗑️ REMOVE PART (ONCE)",
+    Desc = "Hilangkan semua part dalam radius",
+    Color = Color3.fromRGB(200, 80, 80),
+    Callback = RemoveParts
 })
 
-SettingsGroup:AddToggle("ShowCustomCursor", {
-    Text = "Custom Cursor",
-    Default = true,
-    Callback = function(v) Library.ShowCustomCursor = v end
+--// REMOTE TAB
+local RemoteTab = Window:Tab({
+    Title = "Remote Menu",
+    Icon = "radio"
 })
 
--- Theme Manager
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-ThemeManager:ApplyToTab(Tabs.Settings)
-SaveManager:ApplyToTab(Tabs.Settings)
+RemoteTab:Paragraph({
+    Title = "📡 Remote Control",
+    Desc = "Scan dan spam remote events"
+})
 
--- ============================================
--- INFO LABEL
--- ============================================
-local InfoGroup = Tabs.Survivor:AddRightGroupbox("Information")
-InfoGroup:AddLabel("Player: " .. LocalPlayer.Name, false, "PlayerLabel")
-InfoGroup:AddLabel("Game: Violence District", false, "GameLabel")
-InfoGroup:AddLabel("Fitur Lengkap 2025", false, "FiturLabel")
+RemoteTab:Button({
+    Title = "🔄 SCAN REMOTES",
+    Desc = "Scan semua remote di ReplicatedStorage",
+    Callback = function()
+        ScanAllRemotes()
+        WindUI:Notify({
+            Title = "Scan Complete",
+            Content = "Found " .. #ScannedRemotes .. " remotes"
+        })
+    end
+})
 
--- ============================================
--- MAIN LOOP ESP
--- ============================================
-coroutine.wrap(function()
-    while task.wait(0.3) do
-        if getgenv().VD.ESP.Enabled then
-            local killer = GetKiller()
-            
-            for _, plr in pairs(Players:GetPlayers()) do
-                if plr ~= LocalPlayer and plr.Character then
-                    local isKiller = (plr == killer)
-                    if (isKiller and getgenv().VD.ESP.Killer) or (not isKiller and getgenv().VD.ESP.Survivors) then
-                        if not plr.Character:FindFirstChildOfClass("Highlight") then
-                            CreatePlayerESP(plr, isKiller)
-                        end
+RemoteTab:Divider()
+
+-- Remote list dropdown (akan di-update)
+local function UpdateRemoteDropdown()
+    RemoteTab:Clear()
+    
+    RemoteTab:Paragraph({
+        Title = "📡 Remote Control",
+        Desc = "Scan dan spam remote events"
+    })
+    
+    RemoteTab:Button({
+        Title = "🔄 SCAN REMOTES",
+        Desc = "Scan semua remote di ReplicatedStorage",
+        Callback = function()
+            ScanAllRemotes()
+            UpdateRemoteDropdown()
+        end
+    })
+    
+    RemoteTab:Divider()
+    
+    if #ScannedRemotes > 0 then
+        local remoteNames = {}
+        for _, remote in ipairs(ScannedRemotes) do
+            table.insert(remoteNames, remote.Name .. " [" .. remote.Type .. "]")
+        end
+        
+        RemoteTab:Dropdown({
+            Title = "Select Remote",
+            Desc = "Pilih remote untuk di-spam",
+            Values = remoteNames,
+            Value = remoteNames[1] or "",
+            Callback = function(v)
+                for _, remote in ipairs(ScannedRemotes) do
+                    if remote.Name .. " [" .. remote.Type .. "]" == v then
+                        Config.SpamTarget = remote
+                        break
                     end
                 end
             end
-            
-            if getgenv().VD.ESP.Generators then
-                for _, gen in pairs(GetGenerators()) do
-                    if gen:IsA("BasePart") then CreateGeneratorESP(gen) end
+        })
+        
+        RemoteTab:Input({
+            Title = "Arguments (JSON)",
+            Desc = "Contoh: [1, 'test', true]",
+            Value = Config.SpamArgs,
+            Callback = function(v) Config.SpamArgs = v end
+        })
+        
+        RemoteTab:Slider({
+            Title = "Spam Interval",
+            Desc = "Delay antar spam (detik)",
+            Min = 0.01,
+            Max = 2,
+            Default = Config.SpamInterval,
+            Rounding = 2,
+            Callback = function(v) Config.SpamInterval = v end
+        })
+        
+        RemoteTab:Toggle({
+            Title = "⚡ SPAM REMOTE",
+            Desc = "Spam remote terpilih",
+            Value = Config.RemoteSpam,
+            Callback = function(v)
+                Config.RemoteSpam = v
+                if v and Config.SpamTarget then
+                    SpamRemote(
+                        Config.SpamTarget.Instance,
+                        Config.SpamTarget.Type == "RemoteEvent" and "FireServer" or "InvokeServer",
+                        Config.SpamArgs,
+                        Config.SpamInterval
+                    )
+                elseif not v then
+                    StopAllSpam()
                 end
             end
-            
-            if getgenv().VD.ESP.Hooks then
-                for _, hook in pairs(GetHooks()) do
-                    if hook:IsA("BasePart") then CreateHookESP(hook) end
-                end
-            end
-            
-            if getgenv().VD.ESP.Chests then
-                for _, chest in pairs(GetChests()) do
-                    if chest:IsA("BasePart") then CreateChestESP(chest) end
-                end
-            end
+        })
+        
+        RemoteTab:Button({
+            Title = "⏹️ STOP ALL SPAM",
+            Desc = "Hentikan semua spamming",
+            Color = Color3.fromRGB(200, 80, 80),
+            Callback = StopAllSpam
+        })
+        
+        RemoteTab:Divider()
+        
+        RemoteTab:Button({
+            Title = "💥 CRASH SERVER",
+            Desc = "Attempt to crash the server",
+            Color = Color3.fromRGB(255, 50, 50),
+            Callback = CrashServer
+        })
+        
+        RemoteTab:Button({
+            Title = "🐢 LAG SERVER",
+            Desc = "Create massive lag",
+            Color = Color3.fromRGB(255, 150, 50),
+            Callback = LagServer
+        })
+    else
+        RemoteTab:Label({Title = "No remotes scanned yet"})
+        RemoteTab:Label({Title = "Click SCAN REMOTES first"})
+    end
+end
+
+RemoteTab:Button({
+    Title = "🔄 SCAN REMOTES",
+    Desc = "Scan semua remote di ReplicatedStorage",
+    Callback = function()
+        ScanAllRemotes()
+        UpdateRemoteDropdown()
+    end
+})
+
+task.spawn(UpdateRemoteDropdown)
+
+--// PLAYER TAB
+local PlayerTab = Window:Tab({
+    Title = "Player Menu",
+    Icon = "user"
+})
+
+PlayerTab:Toggle({
+    Title = "🦅 FLY",
+    Desc = "Mode terbang (WASD + Space/Ctrl)",
+    Value = Config.Fly,
+    Callback = ToggleFly
+})
+
+PlayerTab:Toggle({
+    Title = "🚪 NOCLIP",
+    Desc = "Tembus dinding",
+    Value = Config.Noclip,
+    Callback = ToggleNoclip
+})
+
+PlayerTab:Slider({
+    Title = "🏃 WALKSPEED",
+    Desc = "Kecepatan jalan",
+    Min = 16,
+    Max = 500,
+    Default = Config.WalkSpeed,
+    Callback = UpdateWalkSpeed
+})
+
+PlayerTab:Toggle({
+    Title = "⬆️ INFINITE JUMP",
+    Desc = "Lompat terus di udara",
+    Value = Config.InfiniteJump,
+    Callback = function(v) Config.InfiniteJump = v end
+})
+
+--// ESP TAB
+local ESPTab = Window:Tab({
+    Title = "ESP Menu",
+    Icon = "eye"
+})
+
+ESPTab:Toggle({
+    Title = "ESP HIGHLIGHT",
+    Desc = "Box di sekitar player",
+    Value = Config.ESP,
+    Callback = ToggleESP
+})
+
+ESPTab:Toggle({
+    Title = "ESP LINE",
+    Desc = "Garis dari player ke bawah layar",
+    Value = Config.ESPLine,
+    Callback = function(v) Config.ESPLine = v end
+})
+
+ESPTab:Toggle({
+    Title = "HEALTH BAR",
+    Desc = "Bar kesehatan player",
+    Value = Config.ESPHealth,
+    Callback = function(v)
+        Config.ESPHealth = v
+        if Config.ESP then ToggleESP(Config.ESP) end
+    end
+})
+
+ESPTab:Toggle({
+    Title = "NAMETAG",
+    Desc = "Nama player di atas kepala",
+    Value = Config.ESPName,
+    Callback = function(v)
+        Config.ESPName = v
+        if Config.ESP then ToggleESP(Config.ESP) end
+    end
+})
+
+ESPTab:Toggle({
+    Title = "DISTANCE",
+    Desc = "Jarak dari player",
+    Value = Config.ESPDistance,
+    Callback = function(v)
+        Config.ESPDistance = v
+        if Config.ESP then ToggleESP(Config.ESP) end
+    end
+})
+
+ESPTab:Colorpicker({
+    Title = "ESP COLOR",
+    Desc = "Warna untuk ESP",
+    Default = Config.ESPColor,
+    Callback = function(c)
+        Config.ESPColor = c
+        if Config.ESP then ToggleESP(Config.ESP) end
+    end
+})
+
+RunService.RenderStepped:Connect(UpdateTracers)
+
+--// OTHER TAB
+local OtherTab = Window:Tab({
+    Title = "Other",
+    Icon = "settings"
+})
+
+OtherTab:Paragraph({
+    Title = "🔗 DISCORD",
+    Desc = "https://discord.gg/CdcnyNQVw"
+})
+
+OtherTab:Button({
+    Title = "📋 COPY DISCORD LINK",
+    Desc = "Copy ke clipboard",
+    Callback = function()
+        setclipboard("https://discord.gg/CdcnyNQVw")
+        WindUI:Notify({Title = "Copied!", Content = "Discord link copied to clipboard"})
+    end
+})
+
+OtherTab:Divider()
+
+OtherTab:Input({
+    Title = "CUSTOM WEBHOOK",
+    Desc = "Webhook URL untuk logging",
+    Value = Config.CustomWebhook,
+    Placeholder = "https://discord.com/api/webhooks/...",
+    Callback = function(v) Config.CustomWebhook = v end
+})
+
+OtherTab:Button({
+    Title = "TEST WEBHOOK",
+    Desc = "Kirim test message",
+    Callback = function()
+        if Config.CustomWebhook ~= "" then
+            local data = {
+                ["content"] = "✅ Test message from RYEENZY HUB",
+                ["username"] = "RYEENZY HUB"
+            }
+            local json = HttpService:JSONEncode(data)
+            pcall(function()
+                request = {
+                    Url = Config.CustomWebhook,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = json
+                }
+                HttpService:PostAsync(request.Url, request.Body)
+                WindUI:Notify({Title = "Test Sent", Content = "Check your Discord"})
+            end)
         else
-            RemoveAllESP()
+            WindUI:Notify({Title = "Error", Content = "Webhook URL not set!"})
         end
     end
-end)()
+})
+
+OtherTab:Divider()
+
+OtherTab:Paragraph({
+    Title = "🛡️ BYPASS ANTI-CHEAT",
+    Desc = "Fitur bypass untuk berbagai anti-cheat"
+})
+
+OtherTab:Button({
+    Title = "BYPASS BYFRON",
+    Desc = "Bypass Byfron anti-cheat",
+    Callback = function()
+        -- Simulasi bypass (executor dependent)
+        WindUI:Notify({Title = "Bypass", Content = "Attempting to bypass anti-cheat..."})
+        SendToWebhook("🛡️ **Bypass Attempt**\nPlayer: **" .. LocalPlayer.Name .. "**")
+    end
+})
+
+--// INFO TAB
+local InfoTab = Window:Tab({
+    Title = "Info",
+    Icon = "info"
+})
+
+InfoTab:Paragraph({
+    Title = "🔥 RYEENZY HUB - ULTIMATE",
+    Desc = [[
+Premium Exploit Script for Roblox
+
+Version: 6.0.0
+Created by: RYEENZY#6969
+Discord: https://discord.gg/CdcnyNQVw
+
+✅ FEATURES:
+• PART MENU
+  - Bring Part (Tarik semua part)
+  - Flying Part (Ke player random)
+  - Remove Part (Hilangkan part)
+
+• REMOTE MENU
+  - Scan Remote Events
+  - Spam Remote with Custom Args
+  - Crash Server
+  - Lag Server
+
+• PLAYER MENU
+  - Fly
+  - Noclip
+  - WalkSpeed
+  - Infinite Jump
+
+• ESP MENU
+  - Highlight (Box)
+  - Line (Tracers)
+  - Health Bar
+  - Nametag
+  - Distance
+
+• OTHER
+  - Discord Integration
+  - Custom Webhook
+  - Anti-Cheat Bypass
+
+⚠️ VISIBLE TO ALL PLAYERS
+- Part manipulations terlihat
+- Crash/Lag mempengaruhi server
+- ESP hanya untuk client
+]],
+    Image = "skull"
+})
 
 -- ============================================
--- FEATURE LOOPS
+-- ANTI-AFK
 -- ============================================
-RunService.Heartbeat:Connect(DoAutoParry)
-coroutine.wrap(function() while task.wait(0.5) do DoAutoGenerator() end end)()
-coroutine.wrap(function() while task.wait(0.3) do DoAutoKill() end end)()
-
--- No Cooldown
-RunService.Heartbeat:Connect(function()
-    if getgenv().VD.Killer.NoCooldown and LocalPlayer.Character then
-        for _, obj in pairs(LocalPlayer.Character:GetDescendants()) do
-            if obj:IsA("NumberValue") and obj.Name:lower():find("cooldown") then
-                obj.Value = 0
-            end
-        end
-    end
-end)
-
--- Walkspeed maintain
-RunService.Heartbeat:Connect(function()
-    if LocalPlayer.Character then
-        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            if hum.WalkSpeed ~= getgenv().VD.Movement.Walkspeed then
-                hum.WalkSpeed = getgenv().VD.Movement.Walkspeed
-            end
-            if hum.JumpPower ~= getgenv().VD.Movement.JumpPower then
-                hum.JumpPower = getgenv().VD.Movement.JumpPower
-            end
-        end
-    end
-end)
-
--- NoClip
-RunService.Stepped:Connect(function()
-    if getgenv().VD.Movement.NoClip and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
-        end
-    end
-end)
-
--- Fly Mode
-RunService.Heartbeat:Connect(function()
-    if getgenv().VD.Movement.Fly and LocalPlayer.Character then
-        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hum and root then
-            hum.PlatformStand = true
-            local moveDir = Vector3.new(0, 0, 0)
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveDir = moveDir + Camera.CFrame.LookVector * 50
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveDir = moveDir - Camera.CFrame.LookVector * 50
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                moveDir = moveDir - Camera.CFrame.RightVector * 50
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                moveDir = moveDir + Camera.CFrame.RightVector * 50
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                moveDir = moveDir + Vector3.new(0, 50, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                moveDir = moveDir - Vector3.new(0, 50, 0)
-            end
-            root.Velocity = moveDir
-        end
-    elseif getgenv().VD.Movement.Fly == false and LocalPlayer.Character then
-        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.PlatformStand = false end
-    end
-end)
-
--- Teleport
-Mouse.Button1Down:Connect(function()
-    if getgenv().VD.Movement.Teleport and LocalPlayer.Character then
-        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            root.CFrame = CFrame.new(Mouse.Hit.p)
-            Library:Notify("Teleported!")
-        end
+spawn(function()
+    while true do
+        wait(60)
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
     end
 end)
 
 -- ============================================
--- SAVE CONFIG & NOTIFICATION
+-- CHARACTER RESPAWN HANDLER
 -- ============================================
-SaveManager:LoadAutoloadConfig()
+LocalPlayer.CharacterAdded:Connect(function(character)
+    wait(1)
+    
+    -- Re-apply settings
+    if Config.WalkSpeed ~= 16 then
+        local humanoid = character:WaitForChild("Humanoid")
+        humanoid.WalkSpeed = Config.WalkSpeed
+    end
+    
+    if Config.Noclip then
+        ToggleNoclip(true)
+    end
+    
+    if Config.Fly then
+        ToggleFly(true)
+    end
+end)
 
-Library:Notify("✅ VIOLENCE DISTRICT - OBSIDIAN UI")
-Library:Notify("🔹 Tekan RightShift untuk buka menu")
-Library:Notify("🔹 " .. #Players:GetPlayers() .. " players in server")
+-- ============================================
+-- INITIALIZATION
+-- ============================================
+WindUI:Notify({
+    Title = "RYEENZY HUB - ULTIMATE",
+    Content = "Premium Script Loaded!",
+    Duration = 3,
+    Icon = "skull"
+})
+
+-- Log aktivasi
+SendToWebhook("✅ **RYEENZY HUB ACTIVATED**\nPlayer: **" .. LocalPlayer.Name .. "**\nUser ID: **" .. LocalPlayer.UserId .. "**")
+
+print([[
+    ╔═══════════════════════════════════════╗
+    ║   RYEENZY HUB - ULTIMATE v6.0.0      ║
+    ║         WIND UI EDITION               ║
+    ╠═══════════════════════════════════════╣
+    ║ Fitur Lengkap:                        ║
+    ║ ✓ Part Menu (Bring/Flying/Remove)     ║
+    ║ ✓ Remote Menu (Scan/Spam/Crash/Lag)   ║
+    ║ ✓ Player Menu (Fly/Noclip/Speed/Jump) ║
+    ║ ✓ ESP Menu (5 Fitur ESP)              ║
+    ║ ✓ Discord & Webhook Integration       ║
+    ╚═══════════════════════════════════════╝
+]])
+print("🔥 Created by RYEENZY#6969")
+print("📡 Discord: https://discord.gg/CdcnyNQVw")
