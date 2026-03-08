@@ -5,844 +5,600 @@
     ██╔══██╗  ╚██╔╝  ██╔══╝  ██╔══╝  ██║╚██╗██║ ███╔╝    ╚██╔╝  
     ██║  ██║   ██║   ███████╗███████╗██║ ╚████║███████╗   ██║   
     ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝   ╚═╝   
+    
+    RYEENZY | HUB - FreeCam & Graphic Settings
+    Version: 1.1.0  (Fixed HTTP 404)
+    
+    Controls:
+      [F3]         = Toggle FreeCam ON/OFF
+      [F4]         = Open/Close Window UI
+      [W/A/S/D]    = Move Camera
+      [E / Q]      = Move Up / Down
+      [Scroll]     = Zoom In / Out
+      [= / -]      = Speed +5 / -5
+      [Shift]      = Speed Boost 3x
+      [C]          = Cinematic Slow Mode
+]]
 
-    RYEENZY | HUB
-    Version  : 1.0.0
-    WindUI   : WindUI by Footagesus
-    Features : FreeCam | Depth of Field | High Texture | Ultra Glossy
---]]
+-- ═══════════════════════════════════════════════
+--  LOAD MACLIB  ✅  URL Resmi (biggaboy212/Maclib)
+-- ═══════════════════════════════════════════════
+local MacLib = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/biggaboy212/Public-Resources/main/MacLib/maclib.lua",
+    true
+))()
 
--- ══════════════════════════════════════════════════
---  SERVICES
--- ══════════════════════════════════════════════════
-local RunService        = game:GetService("RunService")
-local UserInputService  = game:GetService("UserInputService")
-local Players           = game:GetService("Players")
-local Lighting          = game:GetService("Lighting")
-local TweenService      = game:GetService("TweenService")
-local Workspace         = game:GetService("Workspace")
+-- ════════════════════════════════════════
+--           SERVICES
+-- ════════════════════════════════════════
+local Players          = game:GetService("Players")
+local RunService       = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting         = game:GetService("Lighting")
+local Workspace        = game:GetService("Workspace")
 
-local LocalPlayer       = Players.LocalPlayer
-local Camera            = Workspace.CurrentCamera
-local Mouse             = LocalPlayer:GetMouse()
+local LocalPlayer = Players.LocalPlayer
+local Camera      = Workspace.CurrentCamera
 
--- ══════════════════════════════════════════════════
---  LOAD WindUI
--- ══════════════════════════════════════════════════
-local WindUI
-do
-    local cloneref = (cloneref or clonereference or function(i) return i end)
-    local ok, result = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-    end)
-    if ok then
-        WindUI = result
-    else
-        error("[RYEENZY HUB] Gagal memuat WindUI: " .. tostring(result))
-    end
-end
+-- ════════════════════════════════════════
+--           FREECAM STATE
+-- ════════════════════════════════════════
+local FreeCamState = {
+    Enabled       = false,
+    Speed         = 30,
+    SmoothFactor  = 0.12,
+    ZoomSpeed     = 5,
+    FOV           = 70,
+    _connection   = nil,
+    _savedCType   = nil,
+    _savedFOV     = nil,
+    _targetCFrame = CFrame.new(),
+    _currentCF    = CFrame.new(),
+    _targetFOV    = 70,
+    _currentFOV   = 70,
+    _pitch        = 0,
+    _yaw          = 0,
+}
 
--- ══════════════════════════════════════════════════
---  WARNA TEMA
--- ══════════════════════════════════════════════════
-local AccentCyan    = Color3.fromHex("#00F5FF")
-local AccentPurple  = Color3.fromHex("#B060FF")
-local AccentGreen   = Color3.fromHex("#30FF6A")
-local AccentRed     = Color3.fromHex("#FF4040")
-local ColGrey       = Color3.fromHex("#83889E")
+-- ════════════════════════════════════════
+--           GRAPHIC STATE
+-- ════════════════════════════════════════
+local GraphicState = {
+    DepthOfField   = false,
+    GlossyTexture  = false,
+    HighTexture    = false,
+    LockRender     = false,
+    _dofEffect     = nil,
+    _dofFocus      = 30,
+    _dofAperture   = 0.15,
+    _dofFocusRange = 45,
+}
 
--- ══════════════════════════════════════════════════
---  BUAT WINDOW
--- ══════════════════════════════════════════════════
-local Window = WindUI:CreateWindow({
-    Title = "RYEENZY  |  HUB",
-    Folder = "RyeenzyHub",
-    Icon = "solar:star-bold-duotone",
-    NewElements = true,
-    HideSearchBar = false,
+-- ════════════════════════════════════════
+--        FREECAM FUNCTIONS
+-- ════════════════════════════════════════
+local function EnableFreeCam()
+    if FreeCamState.Enabled then return end
+    FreeCamState.Enabled    = true
+    FreeCamState._savedCType = Camera.CameraType
+    FreeCamState._savedFOV   = Camera.FieldOfView
 
-    OpenButton = {
-        Title = "RYEENZY HUB",
-        CornerRadius = UDim.new(1, 0),
-        StrokeThickness = 2,
-        Enabled = true,
-        Draggable = true,
-        OnlyMobile = false,
-        Scale = 0.5,
-        Color = ColorSequence.new(
-            Color3.fromHex("#00F5FF"),
-            Color3.fromHex("#B060FF")
-        ),
-    },
+    Camera.CameraType = Enum.CameraType.Scriptable
 
-    Topbar = {
-        Height = 44,
-        ButtonsType = "Mac",
-    },
-})
+    FreeCamState._targetCFrame = Camera.CFrame
+    FreeCamState._currentCF    = Camera.CFrame
+    FreeCamState._targetFOV    = FreeCamState.FOV
+    FreeCamState._currentFOV   = Camera.FieldOfView
 
--- Tag versi
-Window:Tag({
-    Title = "v1.0.0",
-    Icon = "star",
-    Color = Color3.fromHex("#1c1c1c"),
-    Border = true,
-})
+    local look = Camera.CFrame.LookVector
+    FreeCamState._pitch = math.asin(-look.Y)
+    FreeCamState._yaw   = math.atan2(-look.X, -look.Z)
 
--- ══════════════════════════════════════════════════
---  SECTION
--- ══════════════════════════════════════════════════
-local MainSection    = Window:Section({ Title = "Main" })
-local GraphicSection = Window:Section({ Title = "Graphic Setting" })
+    UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
 
--- ══════════════════════════════════════════════════
---  ╔══════════════════╗
---  ║   TAB FREECAM    ║
---  ╚══════════════════╝
--- ══════════════════════════════════════════════════
-do
-    local FreeCamTab = MainSection:Tab({
-        Title = "FreeCam",
-        Icon = "solar:camera-bold",
-        IconColor = AccentCyan,
-        IconShape = "Square",
-        Border = true,
-    })
+    FreeCamState._connection = RunService.RenderStepped:Connect(function(dt)
+        local smooth = math.clamp(FreeCamState.SmoothFactor, 0.01, 1)
 
-    -- ── State ──────────────────────────────────────
-    local freecamActive     = false
-    local freecamConnection = nil
-    local renderConnection  = nil
+        -- Mouse look
+        local delta = UserInputService:GetMouseDelta()
+        FreeCamState._pitch = math.clamp(FreeCamState._pitch - delta.Y * 0.003, -math.pi/2 + 0.01, math.pi/2 - 0.01)
+        FreeCamState._yaw   = FreeCamState._yaw - delta.X * 0.003
 
-    -- Konfigurasi
-    local camSpeed          = 20       -- studs/s
-    local camSpeedFast      = 60       -- shift multiplier
-    local camSensitivity    = 0.3      -- mouse sensitivity
-    local camSmoothFactor   = 0.12     -- lerp factor (0 = sangat smooth, 1 = instan)
+        local rotation = CFrame.Angles(0, FreeCamState._yaw, 0) * CFrame.Angles(FreeCamState._pitch, 0, 0)
 
-    -- Internal state kamera
-    local camYaw            = 0
-    local camPitch          = 0
-    local targetCF          = CFrame.new()
-    local currentCF         = CFrame.new()
-    local frozenCF          = nil      -- CFrame karakter saat masuk freecam
-
-    -- Simpan karakter
-    local savedCharState    = {}
-
-    -- ── Helper: Freeze / Unfreeze karakter ──────────
-    local function freezeCharacter()
-        local char = LocalPlayer.Character
-        if not char then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hrp then
-            frozenCF = hrp.CFrame
-            savedCharState.anchored = hrp.Anchored
-            hrp.Anchored = true
-        end
-        if hum then
-            savedCharState.walkspeed = hum.WalkSpeed
-            savedCharState.jumppower = hum.JumpPower
-            hum.WalkSpeed = 0
-            hum.JumpPower = 0
-        end
-    end
-
-    local function unfreezeCharacter()
-        local char = LocalPlayer.Character
-        if not char then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hrp then
-            hrp.Anchored = savedCharState.anchored or false
-        end
-        if hum then
-            hum.WalkSpeed = savedCharState.walkspeed or 16
-            hum.JumpPower = savedCharState.jumppower or 50
-        end
-    end
-
-    -- ── Aktifkan FreeCam ────────────────────────────
-    local function startFreeCam()
-        if freecamActive then return end
-        freecamActive = true
-
-        -- Freeze karakter
-        freezeCharacter()
-
-        -- Ambil posisi kamera saat ini sebagai titik awal
-        local startCF = Camera.CFrame
-        targetCF  = startCF
-        currentCF = startCF
-
-        -- Ambil yaw & pitch dari CFrame awal
-        local lv = startCF.LookVector
-        camYaw   = math.atan2(-lv.X, -lv.Z)
-        camPitch = math.asin(lv.Y)
-
-        -- Kunci tipe kamera
-        Camera.CameraType = Enum.CameraType.Scriptable
-
-        -- Lock mouse
-        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-        UserInputService.MouseIconEnabled = false
-
-        -- Delta mouse handler
-        freecamConnection = UserInputService.InputChanged:Connect(function(input)
-            if not freecamActive then return end
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                camYaw   = camYaw   - math.rad(input.Delta.X * camSensitivity)
-                camPitch = math.clamp(
-                    camPitch - math.rad(input.Delta.Y * camSensitivity),
-                    math.rad(-89), math.rad(89)
-                )
-            end
-        end)
-
-        -- RenderStepped untuk smooth movement
-        renderConnection = RunService.RenderStepped:Connect(function(dt)
-            if not freecamActive then return end
-
-            -- Input movement
-            local moveDir = Vector3.new()
-            local fast    = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and (camSpeedFast / camSpeed) or 1
-            local speed   = camSpeed * fast * dt
-
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveDir = moveDir + Vector3.new(0, 0, -1)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveDir = moveDir + Vector3.new(0, 0,  1)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                moveDir = moveDir + Vector3.new(-1, 0, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                moveDir = moveDir + Vector3.new( 1, 0, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.E) then
-                moveDir = moveDir + Vector3.new(0,  1, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Q) then
-                moveDir = moveDir + Vector3.new(0, -1, 0)
-            end
-
-            -- Bangun target CFrame baru dari yaw & pitch
-            local rotation = CFrame.fromEulerAnglesYXZ(camPitch, camYaw, 0)
-
-            if moveDir.Magnitude > 0 then
-                moveDir = moveDir.Unit
-                local worldDir = rotation:VectorToWorldSpace(moveDir)
-                targetCF = CFrame.new(targetCF.Position + worldDir * speed) * rotation
-            else
-                targetCF = CFrame.new(targetCF.Position) * rotation
-            end
-
-            -- Smooth lerp kamera
-            currentCF = currentCF:Lerp(targetCF, math.min(1, camSmoothFactor * 60 * dt + camSmoothFactor))
-            Camera.CFrame = currentCF
-        end)
-
-        WindUI:Notify({
-            Title = "FreeCam Aktif",
-            Content = "WASD = Gerak | Q/E = Naik/Turun\nShift = Cepat | RightShift = Lebih Cepat",
-            Icon = "solar:camera-bold",
-            Duration = 4,
-        })
-    end
-
-    -- ── Nonaktifkan FreeCam ─────────────────────────
-    local function stopFreeCam()
-        if not freecamActive then return end
-        freecamActive = false
-
-        if freecamConnection then
-            freecamConnection:Disconnect()
-            freecamConnection = nil
-        end
-        if renderConnection then
-            renderConnection:Disconnect()
-            renderConnection = nil
+        -- Speed modifier
+        local spd = FreeCamState.Speed
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            spd = spd * 3
+        elseif UserInputService:IsKeyDown(Enum.KeyCode.C) then
+            spd = spd * 0.2
         end
 
-        -- Kembalikan kamera ke default
-        Camera.CameraType = Enum.CameraType.Custom
-        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-        UserInputService.MouseIconEnabled = true
+        -- Movement
+        local moveDir = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + rotation.LookVector  end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - rotation.LookVector  end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - rotation.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + rotation.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.E) then moveDir = moveDir + Vector3.new(0,1,0)   end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Q) then moveDir = moveDir - Vector3.new(0,1,0)   end
+        if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
 
-        -- Unfreeze karakter
-        unfreezeCharacter()
+        local newPos = FreeCamState._targetCFrame.Position + moveDir * spd * dt
+        FreeCamState._targetCFrame = CFrame.new(newPos) * rotation
 
-        WindUI:Notify({
-            Title = "FreeCam Nonaktif",
-            Content = "Kamera dikembalikan ke mode normal.",
-            Icon = "solar:camera-bold",
-            Duration = 3,
-        })
-    end
+        FreeCamState._currentCF  = FreeCamState._currentCF:Lerp(FreeCamState._targetCFrame, smooth)
+        FreeCamState._currentFOV = FreeCamState._currentFOV + (FreeCamState._targetFOV - FreeCamState._currentFOV) * smooth
 
-    -- ── UI Elements ─────────────────────────────────
-    FreeCamTab:Section({
-        Title = "FreeCam Control",
-        TextSize = 16,
-    })
-
-    -- Toggle utama freecam
-    local FCToggle = FreeCamTab:Toggle({
-        Flag  = "FreeCamToggle",
-        Title = "Enable FreeCam",
-        Desc  = "Aktifkan mode kamera bebas. Avatar akan diam di tempat.",
-        Value = false,
-        Callback = function(state)
-            if state then
-                startFreeCam()
-            else
-                stopFreeCam()
-            end
-        end,
-    })
-
-    FreeCamTab:Space()
-
-    -- Slider kecepatan normal
-    FreeCamTab:Slider({
-        Flag  = "FreeCamSpeed",
-        Title = "Kecepatan Normal",
-        Desc  = "Kecepatan gerak kamera (studs/s)",
-        Step  = 1,
-        Value = { Min = 5, Max = 200, Default = 20 },
-        Callback = function(v)
-            camSpeed = v
-        end,
-    })
-
-    FreeCamTab:Space()
-
-    -- Slider kecepatan cepat (shift)
-    FreeCamTab:Slider({
-        Flag  = "FreeCamFastSpeed",
-        Title = "Kecepatan Cepat (Shift)",
-        Desc  = "Kecepatan saat menahan Shift",
-        Step  = 5,
-        Value = { Min = 10, Max = 500, Default = 60 },
-        Callback = function(v)
-            camSpeedFast = v
-        end,
-    })
-
-    FreeCamTab:Space()
-
-    -- Slider sensitivitas mouse
-    FreeCamTab:Slider({
-        Flag  = "FreeCamSens",
-        Title = "Sensitivitas Mouse",
-        Desc  = "Sensitivitas rotasi kamera",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 1, Max = 100, Default = 30 },
-        Callback = function(v)
-            camSensitivity = v / 100
-        end,
-    })
-
-    FreeCamTab:Space()
-
-    -- Slider smooth
-    FreeCamTab:Slider({
-        Flag  = "FreeCamSmooth",
-        Title = "Tingkat Kehalusan",
-        Desc  = "Seberapa smooth pergerakan kamera (lebih tinggi = lebih responsif)",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 1, Max = 100, Default = 12 },
-        Callback = function(v)
-            camSmoothFactor = v / 100
-        end,
-    })
-
-    FreeCamTab:Space()
-
-    -- Info keybind
-    FreeCamTab:Section({
-        Title = "WASD = Gerak  •  Q = Turun  •  E = Naik\nShift = Turbo Speed  •  Mouse = Rotasi",
-        TextSize = 14,
-        TextTransparency = 0.4,
-    })
-
-    FreeCamTab:Space()
-
-    -- Keybind toggle freecam
-    FreeCamTab:Keybind({
-        Flag  = "FreeCamKeybind",
-        Title = "Keybind Toggle FreeCam",
-        Desc  = "Tekan tombol ini untuk toggle FreeCam",
-        Value = "F4",
-        Callback = function(key)
-            -- Keybind diproses di listener bawah
-        end,
-    })
-
-    -- Global keybind listener
-    UserInputService.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        if input.KeyCode == Enum.KeyCode.F4 then
-            freecamActive = not freecamActive
-            if freecamActive then
-                -- reset flag sebelum start
-                freecamActive = false
-                startFreeCam()
-                FCToggle:Set(true)
-            else
-                freecamActive = true
-                stopFreeCam()
-                FCToggle:Set(false)
-            end
-        end
+        Camera.CFrame      = FreeCamState._currentCF
+        Camera.FieldOfView = FreeCamState._currentFOV
     end)
 end
 
--- ══════════════════════════════════════════════════
---  ╔════════════════════════╗
---  ║   TAB GRAPHIC SETTING  ║
---  ╚════════════════════════╝
--- ══════════════════════════════════════════════════
-do
-    local GraphicTab = GraphicSection:Tab({
-        Title = "Graphic Setting",
-        Icon = "solar:monitor-bold",
-        IconColor = AccentPurple,
-        IconShape = "Square",
-        Border = true,
-    })
-
-    -- ══════════════════════════════
-    --  DEPTH OF FIELD (BLUR EFEK)
-    -- ══════════════════════════════
-    GraphicTab:Section({
-        Title = "Depth of Field",
-        TextSize = 17,
-    })
-
-    -- Cari atau buat DepthOfField instance
-    local function getDoF()
-        local dof = Lighting:FindFirstChildOfClass("DepthOfFieldEffect")
-        if not dof then
-            dof = Instance.new("DepthOfFieldEffect")
-            dof.Parent = Lighting
-        end
-        return dof
+local function DisableFreeCam()
+    if not FreeCamState.Enabled then return end
+    FreeCamState.Enabled = false
+    if FreeCamState._connection then
+        FreeCamState._connection:Disconnect()
+        FreeCamState._connection = nil
     end
-
-    -- State DoF
-    local dofEnabled    = false
-    local dofFocusDist  = 35
-    local dofInRange    = 15
-    local dofOutRange   = 25
-    local dofFarIntens  = 0.85
-
-    local function applyDoF()
-        local dof = getDoF()
-        if dofEnabled then
-            dof.Enabled      = true
-            dof.FocusDistance = dofFocusDist
-            dof.InFocusRadius = dofInRange
-            dof.NearIntensity = 0
-            dof.FarIntensity  = dofFarIntens
-        else
-            dof.Enabled = false
-        end
-    end
-
-    GraphicTab:Toggle({
-        Flag  = "DoFToggle",
-        Title = "Enable Depth of Field",
-        Desc  = "Efek blur bokeh otomatis berdasarkan jarak fokus kamera.",
-        Value = false,
-        Callback = function(state)
-            dofEnabled = state
-            applyDoF()
-        end,
-    })
-
-    GraphicTab:Space()
-
-    GraphicTab:Slider({
-        Flag  = "DoFFocus",
-        Title = "Jarak Fokus",
-        Desc  = "Titik fokus utama (studs dari kamera)",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 0, Max = 150, Default = 35 },
-        Callback = function(v)
-            dofFocusDist = v
-            applyDoF()
-        end,
-    })
-
-    GraphicTab:Space()
-
-    GraphicTab:Slider({
-        Flag  = "DoFInRange",
-        Title = "Rentang Fokus (Dekat)",
-        Desc  = "Area tajam di depan titik fokus",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 1, Max = 80, Default = 15 },
-        Callback = function(v)
-            dofInRange = v
-            applyDoF()
-        end,
-    })
-
-    GraphicTab:Space()
-
-    GraphicTab:Slider({
-        Flag  = "DoFOutRange",
-        Title = "Rentang Fokus (Jauh)",
-        Desc  = "Area tajam di belakang titik fokus",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 1, Max = 120, Default = 25 },
-        Callback = function(v)
-            dofOutRange = v
-            applyDoF()
-        end,
-    })
-
-    GraphicTab:Space()
-
-    GraphicTab:Slider({
-        Flag  = "DoFBlurStr",
-        Title = "Intensitas Blur (Jauh)",
-        Desc  = "Seberapa kuat efek blur pada objek jauh",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 0, Max = 100, Default = 85 },
-        Callback = function(v)
-            dofFarIntens = v / 100
-            applyDoF()
-        end,
-    })
-
-    GraphicTab:Space()
-
-    -- Auto-focus: fokus ikut objek yang dituju kamera
-    local autoFocusConn = nil
-    GraphicTab:Toggle({
-        Flag  = "DoFAutoFocus",
-        Title = "Auto Focus",
-        Desc  = "Fokus otomatis mengikuti objek yang dilihat kamera (raycast).",
-        Value = false,
-        Callback = function(state)
-            if state then
-                autoFocusConn = RunService.RenderStepped:Connect(function()
-                    if not dofEnabled then return end
-                    local origin    = Camera.CFrame.Position
-                    local direction = Camera.CFrame.LookVector * 500
-                    local result    = Workspace:Raycast(origin, direction, RaycastParams.new())
-                    if result then
-                        local dist = (result.Position - origin).Magnitude
-                        dofFocusDist = dist
-                        applyDoF()
-                    end
-                end)
-            else
-                if autoFocusConn then
-                    autoFocusConn:Disconnect()
-                    autoFocusConn = nil
-                end
-            end
-        end,
-    })
-
-    GraphicTab:Space()
-
-    -- ══════════════════════════════
-    --  HIGH TEXTURE
-    -- ══════════════════════════════
-    GraphicTab:Section({
-        Title = "High Texture",
-        TextSize = 17,
-    })
-
-    GraphicTab:Toggle({
-        Flag  = "HiTexToggle",
-        Title = "Enable High Texture",
-        Desc  = "Mempertajam tekstur & mengurangi tampilan berpiksel.",
-        Value = false,
-        Callback = function(state)
-            if state then
-                -- Level rendering tertinggi
-                pcall(function()
-                    UserSettings():GetService("UserGameSettings").SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel21
-                end)
-
-                -- Lighting teknologi terbaik
-                pcall(function() Lighting.Technology = Enum.Technology.Future end)
-
-                WindUI:Notify({
-                    Title = "High Texture",
-                    Content = "Kualitas rendering telah ditingkatkan ke maksimal.",
-                    Duration = 3,
-                })
-            else
-                pcall(function()
-                    UserSettings():GetService("UserGameSettings").SavedQualityLevel = Enum.SavedQualitySetting.Automatic
-                end)
-                pcall(function() Lighting.Technology = Enum.Technology.ShadowMap end)
-            end
-        end,
-    })
-
-    GraphicTab:Space()
-
-    -- Texture bias (shadow + ambient)
-    GraphicTab:Slider({
-        Flag  = "HiTexShadow",
-        Title = "Shadow Sharpness",
-        Desc  = "Ketajaman bayangan (lebih tinggi = lebih tajam)",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 0, Max = 100, Default = 70 },
-        Callback = function(v)
-            -- ShadowSoftness: 0 = tajam, 1 = lunak — dibalik
-            Lighting.ShadowSoftness = 1 - (v / 100)
-        end,
-    })
-
-    GraphicTab:Space()
-
-    GraphicTab:Slider({
-        Flag  = "HiTexAmbient",
-        Title = "Ambient Brightness",
-        Desc  = "Kecerahan ambient (pencahayaan dasar)",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 0, Max = 100, Default = 55 },
-        Callback = function(v)
-            local bright = v / 100
-            Lighting.Ambient = Color3.new(bright, bright, bright)
-        end,
-    })
-
-    GraphicTab:Space()
-
-    -- ══════════════════════════════
-    --  ULTRA GLOSSY
-    -- ══════════════════════════════
-    GraphicTab:Section({
-        Title = "Ultra Glossy",
-        TextSize = 17,
-    })
-
-    -- Helper: cari / buat effect
-    local function getOrCreate(parent, className)
-        return parent:FindFirstChildOfClass(className)
-            or (function()
-                local inst = Instance.new(className)
-                inst.Parent = parent
-                return inst
-            end)()
-    end
-
-    local glossyEnabled    = false
-    local glossyIntensity  = 0.7
-    local glossyBloomSize  = 24
-    local glossyBloomBright= 2.0
-    local glossySaturation = 0.15
-    local glossyContrast   = 0.25
-
-    local function applyGlossy()
-        -- Bloom untuk kilau
-        local bloom = getOrCreate(Lighting, "BloomEffect")
-        bloom.Enabled    = glossyEnabled
-        bloom.Intensity  = glossyIntensity
-        bloom.Size       = glossyBloomSize
-        bloom.Threshold  = 0.8
-
-        -- Color Correction untuk kontras & saturasi
-        local cc = getOrCreate(Lighting, "ColorCorrectionEffect")
-        cc.Enabled    = glossyEnabled
-        cc.Saturation = glossyEnabled and  glossySaturation or 0
-        cc.Contrast   = glossyEnabled and  glossyContrast   or 0
-        cc.Brightness = glossyEnabled and  0.04            or 0
-        cc.TintColor  = Color3.new(1, 1, 1)
-
-        -- SunRays untuk efek refleksi sinar matahari
-        local sun = getOrCreate(Lighting, "SunRaysEffect")
-        sun.Enabled   = glossyEnabled
-        sun.Intensity = glossyEnabled and 0.25 or 0
-        sun.Spread    = 1.0
-    end
-
-    GraphicTab:Toggle({
-        Flag  = "GlossyToggle",
-        Title = "Enable Ultra Glossy",
-        Desc  = "Menambahkan efek kilap, bloom, dan pencahayaan realistis.",
-        Value = false,
-        Callback = function(state)
-            glossyEnabled = state
-            applyGlossy()
-
-            if state then
-                -- Aktifkan Future lighting untuk refleksi terbaik
-                Lighting.Technology = Enum.Technology.Future
-                WindUI:Notify({
-                    Title = "Ultra Glossy",
-                    Content = "Efek glossy dan refleksi realistis telah aktif.",
-                    Duration = 3,
-                })
-            end
-        end,
-    })
-
-    GraphicTab:Space()
-
-    GraphicTab:Slider({
-        Flag  = "GlossyBloomInt",
-        Title = "Bloom Intensity",
-        Desc  = "Seberapa terang efek kilau cahaya",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 0, Max = 200, Default = 70 },
-        Callback = function(v)
-            glossyIntensity = v / 100
-            applyGlossy()
-        end,
-    })
-
-    GraphicTab:Space()
-
-    GraphicTab:Slider({
-        Flag  = "GlossyBloomSize",
-        Title = "Bloom Size",
-        Desc  = "Ukuran jangkauan efek bloom",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = 1, Max = 56, Default = 24 },
-        Callback = function(v)
-            glossyBloomSize = v
-            applyGlossy()
-        end,
-    })
-
-    GraphicTab:Space()
-
-    GraphicTab:Slider({
-        Flag  = "GlossySaturation",
-        Title = "Saturasi Warna",
-        Desc  = "Tingkat kekayaan warna untuk tampilan lebih vivid",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = -100, Max = 100, Default = 15 },
-        Callback = function(v)
-            glossySaturation = v / 100
-            applyGlossy()
-        end,
-    })
-
-    GraphicTab:Space()
-
-    GraphicTab:Slider({
-        Flag  = "GlossyContrast",
-        Title = "Kontras",
-        Desc  = "Perbedaan terang-gelap (semakin tinggi semakin dramatis)",
-        IsTooltip = true,
-        Step  = 1,
-        Value = { Min = -100, Max = 100, Default = 25 },
-        Callback = function(v)
-            glossyContrast = v / 100
-            applyGlossy()
-        end,
-    })
-
-    GraphicTab:Space()
-
-    -- Colorpicker tint glossy
-    GraphicTab:Colorpicker({
-        Flag    = "GlossyTint",
-        Title   = "Tint Glossy",
-        Desc    = "Warna tint untuk efek glossy",
-        Default = Color3.fromHex("#FFFFFF"),
-        Callback = function(color)
-            local cc = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
-            if cc and glossyEnabled then
-                cc.TintColor = color
-            end
-        end,
-    })
-
-    GraphicTab:Space()
-
-    -- Preset Glossy
-    GraphicTab:Section({
-        Title = "Preset Cepat",
-        TextSize = 14,
-    })
-
-    local PresetGroup = GraphicTab:Group({})
-
-    PresetGroup:Button({
-        Title   = "Cinema",
-        Justify = "Center",
-        Icon    = "",
-        Callback = function()
-            glossyIntensity  = 0.5
-            glossyBloomSize  = 20
-            glossySaturation = 0.10
-            glossyContrast   = 0.40
-            applyGlossy()
-            WindUI:Notify({ Title = "Preset: Cinema", Content = "Mode sinema diaktifkan.", Duration = 2 })
-        end,
-    })
-
-    PresetGroup:Space()
-
-    PresetGroup:Button({
-        Title   = "Vivid",
-        Justify = "Center",
-        Icon    = "",
-        Color   = Color3.fromHex("#FF6030"),
-        Callback = function()
-            glossyIntensity  = 1.0
-            glossyBloomSize  = 32
-            glossySaturation = 0.35
-            glossyContrast   = 0.20
-            applyGlossy()
-            WindUI:Notify({ Title = "Preset: Vivid", Content = "Mode vivid diaktifkan.", Duration = 2 })
-        end,
-    })
-
-    PresetGroup:Space()
-
-    PresetGroup:Button({
-        Title   = "Reset",
-        Justify = "Center",
-        Icon    = "",
-        Color   = Color3.fromHex("#505050"),
-        Callback = function()
-            -- Reset semua efek lighting
-            for _, effect in ipairs({"BloomEffect","ColorCorrectionEffect","SunRaysEffect","DepthOfFieldEffect"}) do
-                local e = Lighting:FindFirstChildOfClass(effect)
-                if e then e:Destroy() end
-            end
-            Lighting.Technology     = Enum.Technology.ShadowMap
-            Lighting.ShadowSoftness = 0.5
-            Lighting.Ambient        = Color3.new(0.5, 0.5, 0.5)
-            WindUI:Notify({ Title = "Reset", Content = "Semua efek grafis dikembalikan ke default.", Duration = 3 })
-        end,
-    })
+    Camera.CameraType  = FreeCamState._savedCType or Enum.CameraType.Custom
+    Camera.FieldOfView = FreeCamState._savedFOV   or 70
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 end
 
--- ══════════════════════════════════════════════════
---  WELCOME NOTIFY
--- ══════════════════════════════════════════════════
-task.delay(1, function()
-    WindUI:Notify({
-        Title   = "RYEENZY | HUB",
-        Content = "Script berhasil dimuat! Selamat datang.",
-        Icon    = "solar:star-bold",
-        Duration = 5,
-    })
+-- ════════════════════════════════════════
+--    GLOBAL KEYBINDS
+-- ════════════════════════════════════════
+local _speedLabel = nil  -- diisi setelah UI dibuat
+
+-- [F3] Toggle FreeCam | [=] Speed+5 | [-] Speed-5
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+
+    if input.KeyCode == Enum.KeyCode.F3 then
+        if FreeCamState.Enabled then DisableFreeCam() else EnableFreeCam() end
+    end
+
+    if input.KeyCode == Enum.KeyCode.Equals then
+        FreeCamState.Speed = math.clamp(FreeCamState.Speed + 5, 1, 200)
+        if _speedLabel then
+            _speedLabel:SetText("Speed: " .. FreeCamState.Speed .. "  |  [+] tambah  [-] kurangi")
+        end
+    end
+
+    if input.KeyCode == Enum.KeyCode.Minus then
+        FreeCamState.Speed = math.clamp(FreeCamState.Speed - 5, 1, 200)
+        if _speedLabel then
+            _speedLabel:SetText("Speed: " .. FreeCamState.Speed .. "  |  [+] tambah  [-] kurangi")
+        end
+    end
 end)
+
+-- [Scroll] Zoom In / Out (hanya saat FreeCam aktif)
+UserInputService.InputChanged:Connect(function(input)
+    if not FreeCamState.Enabled then return end
+    if input.UserInputType == Enum.UserInputType.MouseWheel then
+        local delta = input.Position.Z
+        FreeCamState._targetFOV = math.clamp(
+            FreeCamState._targetFOV - delta * FreeCamState.ZoomSpeed,
+            5, 120
+        )
+    end
+end)
+
+-- ════════════════════════════════════════
+--           GRAPHIC FUNCTIONS
+-- ════════════════════════════════════════
+local function SetDepthOfField(enabled)
+    local old = Lighting:FindFirstChildOfClass("DepthOfFieldEffect")
+    if old then old:Destroy() end
+    GraphicState._dofEffect  = nil
+    GraphicState.DepthOfField = enabled
+    if enabled then
+        local dof = Instance.new("DepthOfFieldEffect")
+        dof.FocusDistance = GraphicState._dofFocus
+        dof.InFocusRadius = GraphicState._dofFocusRange
+        dof.NearIntensity  = GraphicState._dofAperture
+        dof.FarIntensity   = GraphicState._dofAperture
+        dof.Parent = Lighting
+        GraphicState._dofEffect = dof
+    end
+end
+
+local function SetGlossyTexture(enabled)
+    GraphicState.GlossyTexture = enabled
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and enabled and obj.Material == Enum.Material.Plastic then
+            obj.Material = Enum.Material.SmoothPlastic
+        end
+    end
+end
+
+local function SetHighTexture(enabled)
+    GraphicState.HighTexture = enabled
+    if enabled then
+        settings().Rendering.QualityLevel = 21
+        Lighting.Technology = Enum.Technology.Future
+        Lighting.GlobalShadows = true
+        Lighting.ShadowSoftness = 0.2
+        Lighting.EnvironmentDiffuseScale  = 1
+        Lighting.EnvironmentSpecularScale = 1
+    else
+        settings().Rendering.QualityLevel = 10
+        Lighting.Technology = Enum.Technology.ShadowMap
+    end
+end
+
+local function SetLockRender(enabled)
+    GraphicState.LockRender = enabled
+    settings().Rendering.QualityLevel = enabled and 10 or 10
+end
+
+-- ════════════════════════════════════════
+--           BUILD UI
+-- ════════════════════════════════════════
+local Window = MacLib:Window({
+    Title    = "RYEENZY",
+    Subtitle = "HUB | FreeCam & Graphics",
+    Size     = UDim2.fromOffset(868, 650),
+    DragStyle = 2,  -- DragStyle 2 = bisa drag dari mana saja
+    DisabledWindowControls = {},
+    ShowUserInfo = true,
+    Keybind  = Enum.KeyCode.F4,
+    AcrylicBlur = true,
+})
+
+-- ════════════════════════════════════════
+--   AUTO SCALE  (menyesuaikan resolusi layar)
+-- ════════════════════════════════════════
+local _userScale = nil  -- nil = auto, angka = manual override
+
+local function ApplyAutoScale()
+    if _userScale then
+        -- Mode manual: pakai scale yang diset user
+        Window:SetScale(_userScale)
+        return
+    end
+    -- Mode auto: hitung dari viewport
+    local vp     = Workspace.CurrentCamera.ViewportSize
+    local scaleX = vp.X / 1920
+    local scaleY = vp.Y / 1080
+    local scale  = math.clamp(math.min(scaleX, scaleY), 0.4, 1.4)
+    Window:SetScale(scale)
+end
+
+-- Terapkan saat pertama kali
+ApplyAutoScale()
+
+-- Update otomatis kalau resolusi berubah
+Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+    if not _userScale then ApplyAutoScale() end
+end)
+
+Window:GlobalSetting({ Name = "UI Blur",       Default = true, Callback = function(v) Window:SetAcrylicBlurState(v)   end })
+Window:GlobalSetting({ Name = "Notifications", Default = true, Callback = function(v) Window:SetNotificationsState(v) end })
+
+local TabGroup = Window:TabGroup()
+local Tabs = {
+    FreeCam  = TabGroup:Tab({ Name = "Free Cam",  Image = "rbxassetid://10734943448" }),
+    Graphics = TabGroup:Tab({ Name = "Graphics",  Image = "rbxassetid://10734950309" }),
+    Settings = TabGroup:Tab({ Name = "Settings",  Image = "rbxassetid://10734950309" }),
+    Credits  = TabGroup:Tab({ Name = "Credits",   Image = "rbxassetid://18821914323" }),
+}
+
+-- ══════════════════  TAB 1: FREE CAM  ══════════════════
+local FCLeft  = Tabs.FreeCam:Section({ Side = "Left"  })
+local FCRight = Tabs.FreeCam:Section({ Side = "Right" })
+
+FCLeft:Header({ Name = "FreeCam Control" })
+
+FCLeft:Toggle({
+    Name = "Enable FreeCam", Default = false,
+    Callback = function(value)
+        if value then
+            EnableFreeCam()
+            Window:Notify({ Title = "RYEENZY | FreeCam", Description = "FreeCam AKTIF — [F3] toggle", Lifetime = 4 })
+        else
+            DisableFreeCam()
+            Window:Notify({ Title = "RYEENZY | FreeCam", Description = "FreeCam NONAKTIF", Lifetime = 3 })
+        end
+    end,
+}, "FreeCamToggle")
+
+FCLeft:Paragraph({
+    Header = "Keyboard Controls",
+    Body   = "[F3] Toggle ON/OFF  •  [F4] Buka/Tutup UI\n[W/A/S/D] Move  •  [E] Naik  •  [Q] Turun\n[Scroll] Zoom In/Out  •  [+] Speed+5  •  [-] Speed-5\n[Shift] Fast 3x  •  [C] Cinematic Slow"
+})
+
+FCLeft:Divider()
+FCLeft:Header({ Name = "Camera Settings" })
+
+FCLeft:Slider({
+    Name = "Camera Speed", Default = 30, Minimum = 1, Maximum = 200,
+    DisplayMethod = "Value", Precision = 0,
+    Callback = function(val)
+        FreeCamState.Speed = val
+        if _speedLabel then _speedLabel:SetText("Speed: " .. val .. "  |  [+] tambah  [-] kurangi") end
+    end,
+}, "FCSpeed")
+
+_speedLabel = FCLeft:Label({ Text = "Speed: 30  |  [+] tambah  [-] kurangi" })
+
+FCLeft:Slider({
+    Name = "Smooth Factor", Default = 12, Minimum = 1, Maximum = 100,
+    DisplayMethod = "Percent", Precision = 0,
+    Callback = function(val) FreeCamState.SmoothFactor = val / 100 end,
+}, "FCSmooth")
+
+FCLeft:Slider({
+    Name = "Scroll Zoom Speed", Default = 5, Minimum = 1, Maximum = 30,
+    DisplayMethod = "Value", Precision = 0,
+    Callback = function(val) FreeCamState.ZoomSpeed = val end,
+}, "FCZoomSpeed")
+
+FCLeft:Slider({
+    Name = "Default FOV", Default = 70, Minimum = 5, Maximum = 120,
+    DisplayMethod = "Value", Precision = 0,
+    Callback = function(val)
+        FreeCamState.FOV = val
+        FreeCamState._targetFOV = val
+        if not FreeCamState.Enabled then Camera.FieldOfView = val end
+    end,
+}, "FCFOV")
+
+FCRight:Header({ Name = "Cinematic Mode" })
+FCRight:Paragraph({
+    Header = "Tentang Cinematic",
+    Body   = "Tahan [C] saat FreeCam aktif.\nKamera bergerak sangat halus & lambat,\ncocok untuk recording / screenshot sinematik."
+})
+
+FCRight:Divider()
+FCRight:Header({ Name = "Preset Speed" })
+FCRight:Button({ Name = "⚡ Fast (80)", Callback = function()
+    FreeCamState.Speed = 80
+    if _speedLabel then _speedLabel:SetText("Speed: 80  |  [+] tambah  [-] kurangi") end
+    Window:Notify({ Title = "FreeCam", Description = "Speed → FAST (80)", Lifetime = 2 })
+end})
+FCRight:Button({ Name = "🎥 Cinematic (10)", Callback = function()
+    FreeCamState.Speed = 10
+    if _speedLabel then _speedLabel:SetText("Speed: 10  |  [+] tambah  [-] kurangi") end
+    Window:Notify({ Title = "FreeCam", Description = "Speed → CINEMATIC (10)", Lifetime = 2 })
+end})
+FCRight:Button({ Name = "🐢 Slow (3)", Callback = function()
+    FreeCamState.Speed = 3
+    if _speedLabel then _speedLabel:SetText("Speed: 3  |  [+] tambah  [-] kurangi") end
+    Window:Notify({ Title = "FreeCam", Description = "Speed → SLOW (3)", Lifetime = 2 })
+end})
+
+FCRight:Divider()
+FCRight:Header({ Name = "Reset" })
+FCRight:Button({ Name = "🔄 Reset Camera", Callback = function()
+    DisableFreeCam()
+    Camera.CameraType = Enum.CameraType.Custom
+    Camera.FieldOfView = 70
+    FreeCamState.Speed = 30; FreeCamState.SmoothFactor = 0.12
+    FreeCamState.ZoomSpeed = 5; FreeCamState.FOV = 70
+    if _speedLabel then _speedLabel:SetText("Speed: 30  |  [+] tambah  [-] kurangi") end
+    Window:Notify({ Title = "FreeCam", Description = "Camera di-reset ke default.", Lifetime = 3 })
+end})
+
+-- ══════════════════  TAB 2: GRAPHICS  ══════════════════
+local GLeft  = Tabs.Graphics:Section({ Side = "Left"  })
+local GRight = Tabs.Graphics:Section({ Side = "Right" })
+
+GLeft:Header({ Name = "Post Processing" })
+GLeft:Toggle({ Name = "Depth of Field", Default = false,
+    Callback = function(v)
+        SetDepthOfField(v)
+        Window:Notify({ Title = "Graphics", Description = v and "✅ DOF AKTIF" or "❌ DOF NONAKTIF", Lifetime = 3 })
+    end,
+}, "DOFToggle")
+GLeft:Slider({ Name = "DOF Focus Distance", Default = 30, Minimum = 0, Maximum = 150,
+    DisplayMethod = "Value", Precision = 0,
+    Callback = function(val)
+        GraphicState._dofFocus = val
+        if GraphicState._dofEffect then GraphicState._dofEffect.FocusDistance = val end
+    end,
+}, "DOFFocus")
+GLeft:Slider({ Name = "DOF Aperture (Blur)", Default = 15, Minimum = 0, Maximum = 100,
+    DisplayMethod = "Percent", Precision = 0,
+    Callback = function(val)
+        local a = val/100; GraphicState._dofAperture = a
+        if GraphicState._dofEffect then
+            GraphicState._dofEffect.NearIntensity = a
+            GraphicState._dofEffect.FarIntensity  = a
+        end
+    end,
+}, "DOFAperture")
+GLeft:Slider({ Name = "DOF Focus Range", Default = 45, Minimum = 1, Maximum = 200,
+    DisplayMethod = "Value", Precision = 0,
+    Callback = function(val)
+        GraphicState._dofFocusRange = val
+        if GraphicState._dofEffect then GraphicState._dofEffect.InFocusRadius = val end
+    end,
+}, "DOFRange")
+
+GLeft:Divider()
+GLeft:Header({ Name = "Texture Quality" })
+GLeft:Toggle({ Name = "Glossy Texture", Default = false,
+    Callback = function(v)
+        SetGlossyTexture(v)
+        Window:Notify({ Title = "Graphics", Description = v and "✅ Glossy AKTIF" or "❌ Glossy NONAKTIF", Lifetime = 3 })
+    end,
+}, "GlossyToggle")
+GLeft:Toggle({ Name = "High Texture Quality", Default = false,
+    Callback = function(v)
+        SetHighTexture(v)
+        Window:Notify({ Title = "Graphics", Description = v and "✅ High Texture AKTIF" or "❌ High Texture NONAKTIF", Lifetime = 3 })
+    end,
+}, "HighTexToggle")
+
+GRight:Header({ Name = "Render Settings" })
+GRight:Toggle({ Name = "Lock Render (Stable FPS)", Default = false,
+    Callback = function(v)
+        SetLockRender(v)
+        Window:Notify({ Title = "Graphics", Description = v and "✅ Render Lock AKTIF" or "❌ Render Lock NONAKTIF", Lifetime = 3 })
+    end,
+}, "LockRenderToggle")
+GRight:Paragraph({ Header = "Info", Body = "Lock Render menstabilkan kualitas render\nuntuk performa konsisten saat recording." })
+
+GRight:Divider()
+GRight:Header({ Name = "Lighting Control" })
+GRight:Slider({ Name = "Brightness", Default = 100, Minimum = 0, Maximum = 200,
+    DisplayMethod = "Percent", Precision = 0,
+    Callback = function(val) Lighting.Brightness = val/100*2 end,
+}, "LightBright")
+GRight:Slider({ Name = "Ambient Light", Default = 50, Minimum = 0, Maximum = 100,
+    DisplayMethod = "Percent", Precision = 0,
+    Callback = function(val) local c=val/100*255; Lighting.Ambient=Color3.fromRGB(c,c,c) end,
+}, "LightAmbient")
+GRight:Toggle({ Name = "Global Shadows", Default = true,
+    Callback = function(v) Lighting.GlobalShadows = v end,
+}, "ShadowToggle")
+
+GRight:Divider()
+GRight:Header({ Name = "Quick Presets" })
+GRight:Button({ Name = "🌙 Night Cinematic", Callback = function()
+    Lighting.ClockTime=0; Lighting.Brightness=0.5
+    Lighting.Ambient=Color3.fromRGB(20,20,40); Lighting.GlobalShadows=true
+    Window:Notify({ Title="Preset", Description="Night Cinematic!", Lifetime=3 })
+end})
+GRight:Button({ Name = "☀️ Golden Hour", Callback = function()
+    Lighting.ClockTime=17.5; Lighting.Brightness=2
+    Lighting.Ambient=Color3.fromRGB(255,180,100); Lighting.GlobalShadows=true
+    Window:Notify({ Title="Preset", Description="Golden Hour!", Lifetime=3 })
+end})
+GRight:Button({ Name = "🌫️ Foggy Dramatic", Callback = function()
+    Lighting.ClockTime=10; Lighting.Brightness=1
+    Lighting.FogEnd=200; Lighting.FogStart=10
+    Lighting.FogColor=Color3.fromRGB(180,180,200)
+    Window:Notify({ Title="Preset", Description="Foggy Dramatic!", Lifetime=3 })
+end})
+GRight:Button({ Name = "🔄 Reset Lighting", Callback = function()
+    Lighting.ClockTime=14; Lighting.Brightness=2
+    Lighting.Ambient=Color3.fromRGB(70,70,70)
+    Lighting.GlobalShadows=true; Lighting.FogEnd=100000; Lighting.FogStart=0
+    Window:Notify({ Title="Preset", Description="Lighting di-reset.", Lifetime=3 })
+end})
+
+-- ══════════════════  TAB 3: SETTINGS (UI & Window)  ══════════════════
+local SLeft  = Tabs.Settings:Section({ Side = "Left"  })
+local SRight = Tabs.Settings:Section({ Side = "Right" })
+
+SLeft:Header({ Name = "🔲 Ukuran & Scale Window" })
+
+SLeft:Paragraph({
+    Header = "Cara Geser Window",
+    Body   = "DragStyle 2 aktif: klik & tahan di mana saja
+pada window lalu seret untuk memindahkannya."
+})
+
+SLeft:Divider()
+SLeft:Header({ Name = "Scale Manual" })
+
+SLeft:Slider({
+    Name = "Scale UI", Default = 100, Minimum = 40, Maximum = 140,
+    DisplayMethod = "Percent", Precision = 0,
+    Callback = function(val)
+        _userScale = val / 100
+        Window:SetScale(_userScale)
+    end,
+}, "UIScale")
+
+SLeft:Button({ Name = "🔄 Reset Scale (Auto)", Callback = function()
+    _userScale = nil
+    ApplyAutoScale()
+    Window:Notify({ Title = "Settings", Description = "Scale di-reset ke Auto.", Lifetime = 3 })
+end})
+
+SLeft:Divider()
+SLeft:Header({ Name = "Preset Scale" })
+
+SLeft:Button({ Name = "📱 Kecil  (60%)", Callback = function()
+    _userScale = 0.60; Window:SetScale(0.60)
+    Window:Notify({ Title = "Settings", Description = "Scale → 60%", Lifetime = 2 })
+end})
+SLeft:Button({ Name = "💻 Normal (85%)", Callback = function()
+    _userScale = 0.85; Window:SetScale(0.85)
+    Window:Notify({ Title = "Settings", Description = "Scale → 85%", Lifetime = 2 })
+end})
+SLeft:Button({ Name = "🖥️ Besar (100%)", Callback = function()
+    _userScale = 1.00; Window:SetScale(1.00)
+    Window:Notify({ Title = "Settings", Description = "Scale → 100%", Lifetime = 2 })
+end})
+SLeft:Button({ Name = "🔍 Besar Banget (120%)", Callback = function()
+    _userScale = 1.20; Window:SetScale(1.20)
+    Window:Notify({ Title = "Settings", Description = "Scale → 120%", Lifetime = 2 })
+end})
+
+-- Right side - Window position reset
+SRight:Header({ Name = "📌 Posisi Window" })
+
+SRight:Paragraph({
+    Header = "Tips Drag",
+    Body   = "• Klik tahan di area gelap window → seret
+• Window bisa dipindah ke mana saja di layar
+• Klik di luar area UI agar kamera tetap bebas"
+})
+
+SRight:Divider()
+SRight:Header({ Name = "Reset Posisi" })
+
+SRight:Button({ Name = "📐 Tengah Layar", Callback = function()
+    Window:SetSize(UDim2.fromOffset(868, 650))
+    -- Reset ke center (MacLib auto-center via AnchorPoint 0.5,0.5)
+    local base = game:GetService("CoreGui"):FindFirstChild("MacLib") 
+        or game.Players.LocalPlayer.PlayerGui:FindFirstChild("MacLib")
+    Window:Notify({ Title = "Settings", Description = "Window di-reset ke tengah.", Lifetime = 3 })
+end})
+
+SRight:Divider()
+SRight:Header({ Name = "Ukuran Window" })
+
+SRight:Button({ Name = "📦 Compact (700×550)", Callback = function()
+    Window:SetSize(UDim2.fromOffset(700, 550))
+    Window:Notify({ Title = "Settings", Description = "Ukuran → Compact", Lifetime = 2 })
+end})
+SRight:Button({ Name = "📺 Normal (868×650)", Callback = function()
+    Window:SetSize(UDim2.fromOffset(868, 650))
+    Window:Notify({ Title = "Settings", Description = "Ukuran → Normal", Lifetime = 2 })
+end})
+SRight:Button({ Name = "🖥️ Wide (1000×700)", Callback = function()
+    Window:SetSize(UDim2.fromOffset(1000, 700))
+    Window:Notify({ Title = "Settings", Description = "Ukuran → Wide", Lifetime = 2 })
+end})
+
+-- ══════════════════  TAB 4: CREDITS  ══════════════════
+local CLeft = Tabs.Credits:Section({ Side = "Left" })
+CLeft:Header({ Name = "RYEENZY | HUB" })
+CLeft:Paragraph({ Header = "About",
+    Body = "Script FreeCam & Graphic Setting untuk Roblox.\nUI Library: MacLib by biggaboy212.\nCocok untuk cinematic, screenshot, dan recording."
+})
+CLeft:Divider()
+CLeft:Header({ Name = "Info" })
+CLeft:Label({ Text = "Script  : RYEENZY" })
+CLeft:Label({ Text = "UI Lib  : MacLib (biggaboy212)" })
+CLeft:Label({ Text = "Version : 1.1.0" })
+CLeft:Divider()
+CLeft:Header({ Name = "Controls" })
+CLeft:Paragraph({ Header = "FreeCam Keys",
+    Body = "[F3]       — Toggle FreeCam ON/OFF\n[F4]       — Buka / Tutup UI\n[W/A/S/D] — Gerak kamera\n[E / Q]   — Naik / Turun\n[Scroll]  — Zoom In / Out\n[+]       — Speed +5\n[-]       — Speed -5\n[Shift]   — Fast 3x\n[C]       — Cinematic Slow"
+})
+CLeft:Paragraph({ Header = "Tips",
+    Body = "• High Texture + DOF = visual terbaik\n• Night Cinematic preset + DOF = video keren\n• Lock Render untuk recording stabil"
+})
+
+-- ════════════════════════════════════════
+--   INIT
+-- ════════════════════════════════════════
+Tabs.FreeCam:Select()
+
+Window:Notify({
+    Title       = "RYEENZY | HUB v1.1",
+    Description = "[F3] FreeCam  |  [F4] UI  |  [Scroll] Zoom  |  [+/-] Speed",
+    Lifetime    = 6,
+})
+
+MacLib:SetFolder("RYEENZY_HUB")
+print("[RYEENZY HUB v1.1] Loaded! F3=FreeCam | F4=UI | Scroll=Zoom | +/-=Speed")
